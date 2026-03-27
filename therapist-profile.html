@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="View physical therapist profile, credentials, specialties, and book an appointment.">
+    <meta name="robots" content="index, follow">
+    
+    <title>Dr. Sarah Johnson - Physical Therapist Profile | Therapist Connect</title>
+    <link rel="stylesheet" href="style.css">
+
+    <script src="maps.js"></script>
+    
+    <!-- Google Maps API -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC9odfvT7EEt-edIxmAt_uZvPwNzWsJVvY&libraries=places&callback=initTherapistMap" async defer></script>
+    
+    <!-- Structured Data for Therapist Profile -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Physician",
+      "name": "Dr. Sarah Johnson",
+      "description": "Licensed Physical Therapist specializing in orthopedic and sports rehabilitation",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "123 Main Street",
+        "addressLocality": "San Francisco",
+        "addressRegion": "CA",
+        "postalCode": "94102",
+        "addressCountry": "US"
+      },
+      "telephone": "+1-555-0123",
+      "url": "https://therapistconnect.com/therapist-profile.html",
+      "medicalSpecialty": "Physical Therapy",
+      "priceRange": "$$"
+    }
+    </script>
+</head>
+<body>
+    <header class="header">
+        <nav class="nav container">
+            <div class="logo">
+                <h1><a href="index.html">Therapist Connect</a></h1>
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="search.html">Find Therapists</a></li>
+                <li><a href="index.html#about">About</a></li>
+                <li><a href="index.html#contact">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="therapist-profile">
+            <div class="container">
+                <div class="profile-header">
+                    <div class="profile-image">
+                        <img src="https://via.placeholder.com/200" alt="Dr. Sarah Johnson" class="therapist-photo">
+                    </div>
+                    <div class="profile-info">
+                        <h1>Dr. Sarah Johnson, DPT</h1>
+                        <p class="credentials">Licensed Physical Therapist</p>
+                        <div class="rating">
+                            <span class="stars">⭐⭐⭐⭐⭐</span>
+                            <span class="rating-text">4.9 (127 reviews)</span>
+                        </div>
+                        <div class="specialties">
+                            <span class="badge">Orthopedic</span>
+                            <span class="badge">Sports Medicine</span>
+                            <span class="badge">Post-Surgical Rehab</span>
+                        </div>
+                    </div>
+                    <div class="profile-actions">
+                        <button class="btn-primary" id="bookAppointment">Book Appointment</button>
+                        <button class="btn-secondary">Save to Favorites</button>
+                    </div>
+                </div>
+
+                <div class="profile-content">
+                    <div class="profile-section">
+                        <h2>About</h2>
+                        <p>Dr. Sarah Johnson is a licensed physical therapist with over 10 years of experience specializing in orthopedic and sports rehabilitation. She received her Doctor of Physical Therapy degree from the University of California, San Francisco, and is certified in manual therapy and sports performance.</p>
+                    </div>
+
+                    <div class="profile-section">
+                        <h2>Location</h2>
+                        <div class="location-details">
+                            <p><strong>Address:</strong> 123 Main Street, San Francisco, CA 94102</p>
+                            <p><strong>Distance:</strong> 2.3 miles from your location</p>
+                            <div class="map-small">
+                                <div id="therapistMap" style="width: 100%; height: 100%; border-radius: 8px;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-section">
+                        <h2>Specialties</h2>
+                        <ul class="specialties-list">
+                            <li>Orthopedic Rehabilitation</li>
+                            <li>Sports Injury Recovery</li>
+                            <li>Post-Surgical Rehabilitation</li>
+                            <li>Chronic Pain Management</li>
+                            <li>Manual Therapy</li>
+                        </ul>
+                    </div>
+
+                    <div class="profile-section">
+                        <h2>Education & Credentials</h2>
+                        <ul class="credentials-list">
+                            <li>Doctor of Physical Therapy (DPT) - UCSF</li>
+                            <li>Licensed Physical Therapist - California Board of Physical Therapy</li>
+                            <li>Certified Manual Therapist (CMT)</li>
+                            <li>Sports Performance Specialist Certification</li>
+                        </ul>
+                    </div>
+
+                    <div class="profile-section">
+                        <h2>Availability</h2>
+                        <div class="availability">
+                            <p><strong>Monday - Friday:</strong> 9:00 AM - 6:00 PM</p>
+                            <p><strong>Saturday:</strong> 10:00 AM - 2:00 PM</p>
+                            <p><strong>Sunday:</strong> Closed</p>
+                        </div>
+                    </div>
+
+                    <div class="profile-section">
+                        <h2>Reviews</h2>
+                        <div class="reviews">
+                            <div class="review-item">
+                                <div class="review-header">
+                                    <strong>John D.</strong>
+                                    <span class="stars">⭐⭐⭐⭐⭐</span>
+                                </div>
+                                <p>"Dr. Johnson helped me recover from my knee surgery. Professional, knowledgeable, and caring!"</p>
+                            </div>
+                            <div class="review-item">
+                                <div class="review-header">
+                                    <strong>Maria S.</strong>
+                                    <span class="stars">⭐⭐⭐⭐⭐</span>
+                                </div>
+                                <p>"Excellent therapist! The location is convenient and the treatment was effective."</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Therapist Connect. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script src="ai-assistant.js"></script>
+</body>
+</html>

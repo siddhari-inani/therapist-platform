@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Find qualified physical therapists near you. Connect with licensed professionals for personalized treatment and rehabilitation services.">
+    <meta name="keywords" content="physical therapist, PT, rehabilitation, therapy, injury recovery, pain management, orthopedic therapy">
+    <meta name="author" content="Therapist Connect Platform">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://therapistconnect.com/">
+    <meta property="og:title" content="Find Physical Therapists Near You | Therapist Connect">
+    <meta property="og:description" content="Connect with licensed physical therapists in your area. Book appointments and find the right therapist for your needs.">
+    <meta property="og:image" content="https://therapistconnect.com/og-image.jpg">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://therapistconnect.com/">
+    <meta property="twitter:title" content="Find Physical Therapists Near You | Therapist Connect">
+    <meta property="twitter:description" content="Connect with licensed physical therapists in your area. Book appointments and find the right therapist for your needs.">
+    <meta property="twitter:image" content="https://therapistconnect.com/og-image.jpg">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://therapistconnect.com/">
+    
+    <title>Find Physical Therapists Near You | Therapist Connect</title>
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Structured Data for SEO -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Therapist Connect",
+      "url": "https://therapistconnect.com",
+      "description": "Find and connect with licensed physical therapists in your area",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://therapistconnect.com/search?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+</head>
+<body>
+    <header class="header">
+        <nav class="nav container">
+            <div class="logo">
+                <h1>Therapist Connect</h1>
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html" class="active">Home</a></li>
+                <li><a href="search.html">Find Therapists</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="container">
+                <h1 class="hero-title">Find the Perfect Physical Therapist Near You</h1>
+                <p class="hero-subtitle">Connect with licensed professionals for personalized treatment and rehabilitation</p>
+                
+                <div class="search-box">
+                    <form action="search.html" method="get" class="search-form">
+                        <div class="search-input-group">
+                            <input 
+                                type="text" 
+                                name="specialty" 
+                                id="specialty" 
+                                placeholder="Specialty (e.g., Sports, Orthopedic, Pediatric)"
+                                class="search-input"
+                            >
+                            <input 
+                                type="text" 
+                                name="location" 
+                                id="location" 
+                                placeholder="Enter your location or zip code"
+                                class="search-input"
+                            >
+                            <button type="button" class="location-btn" id="useLocation" title="Use current location">
+                                📍
+                            </button>
+                        </div>
+                        <button type="submit" class="search-btn">Search Therapists</button>
+                    </form>
+                    <p class="location-status" id="locationStatus"></p>
+                </div>
+            </div>
+        </section>
+
+        <section class="features">
+            <div class="container">
+                <h2>Why Choose Therapist Connect?</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🔍</div>
+                        <h3>Easy Search</h3>
+                        <p>Find therapists by location, specialty, and availability</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">📍</div>
+                        <h3>Location-Based</h3>
+                        <p>Discover therapists near you with our location services</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">⭐</div>
+                        <h3>Verified Professionals</h3>
+                        <p>All therapists are licensed and verified</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">📅</div>
+                        <h3>Easy Booking</h3>
+                        <p>Schedule appointments directly through our platform</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="about" id="about">
+            <div class="container">
+                <h2>About Therapist Connect</h2>
+                <p>Therapist Connect is a platform designed to help you find the right physical therapist for your needs. Whether you're recovering from an injury, managing chronic pain, or seeking preventive care, we connect you with qualified professionals in your area.</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer" id="contact">
+        <div class="container">
+            <p>&copy; 2024 Therapist Connect. All rights reserved.</p>
+            <p>Contact: info@therapistconnect.com</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script src="ai-assistant.js"></script>
+</body>
+</html>
