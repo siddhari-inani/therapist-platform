@@ -1,6 +1,6 @@
 # Revora Health - Therapist Practice Management Platform
 
-A modern, HIPAA-compliant practice management platform for physical therapists built with Next.js, TypeScript, and Supabase. Features comprehensive patient management, appointment scheduling, SOAP note charting, messaging, and AI-powered assistance.
+Platform for physical therapists built with Next.js, TypeScript, and Supabase. Features comprehensive patient management, appointment scheduling, SOAP note charting, messaging, and AI-powered assistance.
 
 ## Features
 
