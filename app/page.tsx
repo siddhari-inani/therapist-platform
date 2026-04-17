@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Stethoscope, Calendar, FileText, Users, Shield, Zap, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Calendar, FileText, Users, Shield, ArrowRight, CheckCircle2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function HomePage() {
@@ -34,12 +34,12 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-grid-slate-900/[0.04] dark:bg-grid-slate-100/[0.05] bg-[size:20px_20px]" />
         <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32 lg:py-40">
           <div className="max-w-4xl mx-auto text-center space-y-8 animate-fade-in-up">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/15 dark:bg-primary/20 text-primary text-sm font-medium mb-4 border border-primary/20 dark:border-primary/30">
-              <Zap className="h-4 w-4" />
-              <span>Modern Practice Management</span>
-            </div>
-            
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight">
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight flex items-center justify-center gap-3 md:gap-4">
+              <img
+                src="/platform-logo.png"
+                alt="Revora Health logo"
+                className="h-12 w-12 md:h-16 md:w-16 lg:h-20 lg:w-20 object-contain shrink-0"
+              />
               <span className="bg-gradient-to-r from-primary via-lime-600 to-emerald-600 dark:from-primary dark:via-lime-500 dark:to-emerald-500 bg-clip-text text-transparent">
                 Revora Health
               </span>
@@ -110,7 +110,11 @@ export default function HomePage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <Card className="max-w-4xl mx-auto border border-white/30 dark:border-white/10 bg-gradient-to-br from-primary/90 to-lime-600/90 dark:from-primary/80 dark:to-lime-600/80 backdrop-blur-xl text-white shadow-2xl shadow-primary/20">
             <CardContent className="p-12 md:p-16 text-center space-y-6">
-              <Stethoscope className="h-16 w-16 mx-auto opacity-90" />
+              <img
+                src="/platform-logo.png"
+                alt="Revora Health logo"
+                className="h-16 w-16 mx-auto object-contain opacity-95"
+              />
               <h2 className="text-3xl md:text-4xl font-bold">
                 Ready to transform your practice?
               </h2>

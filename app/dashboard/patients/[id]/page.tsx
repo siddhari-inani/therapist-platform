@@ -1134,17 +1134,17 @@ export default function PatientDetailPage() {
       {activeTab === "overview" && (
         <div className="space-y-6">
           {/* Exercise Insights */}
-          <Card className="overflow-hidden border border-amber-300/80 dark:border-amber-700/70 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/50 dark:to-orange-950/30 shadow-md">
-            <CardHeader className="pb-1">
+          <Card className="overflow-hidden border border-sky-200 dark:border-amber-700/70 bg-gradient-to-r from-sky-50 via-white to-indigo-50 dark:from-amber-950/50 dark:to-orange-950/30 shadow-sm ring-1 ring-white/70 dark:ring-0">
+            <CardHeader className="pb-2">
               <div className="flex items-start gap-3">
-                <div className="mt-0.5 rounded-full bg-amber-100 dark:bg-amber-900/60 p-1.5">
-                  <TriangleAlert className="h-4 w-4 text-amber-700 dark:text-amber-300" />
+                <div className="mt-0.5 rounded-full bg-sky-100 dark:bg-amber-900/60 p-1.5">
+                  <TriangleAlert className="h-4 w-4 text-sky-700 dark:text-amber-300" />
                 </div>
                 <div>
-                  <CardTitle className="text-amber-900 dark:text-amber-100 text-base">
+                  <CardTitle className="text-slate-900 dark:text-amber-100 text-base">
                     Exercise Insight
                   </CardTitle>
-                  <CardDescription className="mt-0.5 text-xs text-amber-800/90 dark:text-amber-200/80">
+                  <CardDescription className="mt-0.5 text-xs text-slate-600 dark:text-amber-200/80">
                     Quick clinical signal and suggested plan update.
                   </CardDescription>
                 </div>
@@ -1165,8 +1165,8 @@ export default function PatientDetailPage() {
                       </div>
                       {demoExerciseItems.length > 0 ? (
                         <>
-                          <div className="rounded-md border-l-4 border-amber-500 border border-amber-200/80 dark:border-amber-700 bg-white/80 dark:bg-slate-900/80 px-3 py-2 text-xs text-slate-900 dark:text-slate-100 space-y-1">
-                            <p className="font-semibold text-amber-900 dark:text-amber-200">
+                          <div className="rounded-lg border-l-4 border-primary border border-sky-200/80 dark:border-amber-700 bg-white/85 dark:bg-slate-900/80 px-3 py-2.5 text-xs text-slate-900 dark:text-slate-100 space-y-1.5 shadow-sm">
+                            <p className="font-semibold text-slate-900 dark:text-amber-200">
                               Surya showed repeated knee valgus this week during squats.
                             </p>
                             <p className="text-slate-700 dark:text-slate-300">
@@ -1319,7 +1319,7 @@ export default function PatientDetailPage() {
 
           <div className="grid gap-6 md:grid-cols-2">
             {/* Patient Info */}
-            <Card>
+            <Card className="border-slate-200/80 bg-white/85 shadow-sm ring-1 ring-slate-100 dark:ring-0 dark:border-slate-800">
             <CardHeader>
               <CardTitle>Patient Information</CardTitle>
             </CardHeader>
@@ -1384,7 +1384,7 @@ export default function PatientDetailPage() {
           </Card>
 
           {/* Quick Stats */}
-          <Card className="dark:bg-slate-900 dark:border-slate-800">
+          <Card className="border-slate-200/80 bg-white/85 shadow-sm ring-1 ring-slate-100 dark:ring-0 dark:bg-slate-900 dark:border-slate-800">
             <CardHeader>
               <CardTitle>Quick Stats</CardTitle>
             </CardHeader>
@@ -1649,7 +1649,7 @@ export default function PatientDetailPage() {
 
       {activeTab === "exercise" && (
         <div className="space-y-6">
-          <Card>
+          <Card className="border-slate-200/80 bg-white/85 shadow-sm ring-1 ring-slate-100 dark:ring-0">
             <CardHeader>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <CardTitle>Exercise Tracker</CardTitle>
@@ -1675,7 +1675,7 @@ export default function PatientDetailPage() {
                   )}
 
                   {isDemo && (
-                    <div className="rounded-lg border bg-muted/20 p-4 space-y-3">
+                    <div className="rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50 to-white p-4 space-y-3 shadow-sm dark:border-slate-800 dark:bg-muted/20">
                       <div className="text-sm font-semibold">Current Demo Exercise Snapshot</div>
                       {!demoExercisePlan && (
                         <div className="text-sm text-muted-foreground">
@@ -1754,7 +1754,7 @@ export default function PatientDetailPage() {
                   )}
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+                    <div className="rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50 to-white p-4 space-y-3 shadow-sm dark:border-slate-800 dark:bg-muted/30">
                       <div className="text-sm font-semibold">Create Exercise Template</div>
                       <input
                         className="w-full rounded-md border bg-background px-3 py-2 text-sm"
@@ -1826,7 +1826,7 @@ export default function PatientDetailPage() {
                       </div>
                     </div>
 
-                    <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+                    <div className="rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50 to-white p-4 space-y-3 shadow-sm dark:border-slate-800 dark:bg-muted/30">
                       <div className="text-sm font-semibold">Create Patient Plan</div>
                       <input
                         className="w-full rounded-md border bg-background px-3 py-2 text-sm"
@@ -1846,7 +1846,7 @@ export default function PatientDetailPage() {
                     </div>
                   </div>
 
-                  <div className="rounded-lg border p-4 space-y-3 bg-background/60">
+                  <div className="rounded-xl border border-slate-200/80 p-4 space-y-3 bg-gradient-to-br from-white to-slate-50/80 shadow-sm dark:border-slate-800 dark:bg-background/60">
                     <div className="text-sm font-semibold">Plan Workspace</div>
                     <div className="flex flex-wrap gap-2">
                       {exercisePlans.length === 0 && (
@@ -1886,7 +1886,7 @@ export default function PatientDetailPage() {
                   {selectedPlanId && (
                     <div className="space-y-4">
                       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-                        <div className="rounded-lg border bg-muted/20 p-4 space-y-3 xl:col-span-1">
+                        <div className="rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50 to-white p-4 space-y-3 shadow-sm xl:col-span-1 dark:border-slate-800 dark:bg-muted/20">
                           <div className="text-sm font-semibold">Add Exercise To Selected Plan</div>
                         <select
                           className="w-full rounded-md border bg-background px-3 py-2 text-sm"
@@ -1953,7 +1953,7 @@ export default function PatientDetailPage() {
                           {planItemsForView.map((item, index) => (
                             <div
                               key={item.id}
-                              className="border rounded-lg p-3 bg-muted/40 flex flex-col gap-2"
+                              className="border border-slate-200/80 dark:border-slate-800 rounded-lg p-3 bg-white/85 dark:bg-muted/40 flex flex-col gap-2 shadow-sm"
                             >
                               <div className="flex items-start justify-between gap-3">
                                 <div>
@@ -2372,7 +2372,7 @@ export default function PatientDetailPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-slate-200/80 bg-white/85 shadow-sm ring-1 ring-slate-100 dark:ring-0">
             <CardHeader>
               <CardTitle>Exercise Recommendations</CardTitle>
               <CardDescription>
@@ -2390,7 +2390,7 @@ export default function PatientDetailPage() {
                   {selectedPlanId && (
                     <>
                       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-                        <div className="rounded-lg border bg-muted/30 p-4 space-y-3 xl:col-span-1">
+                        <div className="rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50 to-white p-4 space-y-3 shadow-sm xl:col-span-1 dark:border-slate-800 dark:bg-muted/30">
                         <div className="text-sm font-semibold">
                           Add Recommendation To Selected Plan
                         </div>
@@ -2425,7 +2425,7 @@ export default function PatientDetailPage() {
                           {recommendationsForView.map((rec) => (
                             <div
                               key={rec.id}
-                              className="border rounded-lg p-3 bg-muted/40 flex flex-col gap-1"
+                              className="border border-slate-200/80 dark:border-slate-800 rounded-lg p-3 bg-white/85 dark:bg-muted/40 flex flex-col gap-1 shadow-sm"
                             >
                               <div className="flex justify-between items-center">
                                 <div className="font-medium">{rec.title}</div>

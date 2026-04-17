@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Stethoscope, FlaskConical } from "lucide-react";
+import { FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -109,9 +109,7 @@ export default function LoginPage() {
         <Card className="border border-white/40 dark:border-white/10 shadow-2xl shadow-slate-200/50 dark:shadow-black/30 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl">
           <CardHeader className="space-y-3 pb-6">
             <div className="flex items-center gap-3 justify-center mb-2">
-              <div className="p-3 rounded-2xl bg-gradient-to-br from-primary to-lime-600 shadow-lg shadow-primary/25">
-                <Stethoscope className="h-6 w-6 text-white" />
-              </div>
+              <img src="/platform-logo.png" alt="Revora Health logo" className="h-8 w-8 object-contain" />
               <CardTitle className="text-2xl font-bold bg-gradient-to-r from-primary to-lime-600 bg-clip-text text-transparent">
                 Revora Health
               </CardTitle>

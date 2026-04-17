@@ -12,7 +12,6 @@ import {
   Users,
   LayoutDashboard,
   LogOut,
-  Stethoscope,
   User,
   Trophy,
   FlaskConical,
@@ -91,9 +90,7 @@ export function Sidebar() {
     <aside className="flex h-screen w-64 shrink-0 flex-col border-r border-white/40 dark:border-white/10 bg-white/60 dark:bg-slate-950/80 backdrop-blur-xl shadow-xl shadow-slate-200/30 dark:shadow-black/20">
       {/* Header */}
       <div className="flex h-16 items-center gap-3 px-5 border-b border-white/40 dark:border-white/10">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <Stethoscope className="h-4 w-4" aria-hidden />
-        </div>
+        <img src="/platform-logo.png" alt="Revora Health logo" className="h-9 w-9 shrink-0 object-contain" />
         <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100 tracking-tight truncate">
           Revora Health
         </h2>
