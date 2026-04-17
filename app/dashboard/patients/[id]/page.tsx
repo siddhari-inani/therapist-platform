@@ -2115,18 +2115,6 @@ export default function PatientDetailPage() {
                                     role="img"
                                     aria-label={`${label} form stick figure`}
                                   >
-                                    <defs>
-                                      <marker
-                                        id={`${label}-arrowhead`}
-                                        markerWidth="6"
-                                        markerHeight="6"
-                                        refX="5"
-                                        refY="3"
-                                        orient="auto"
-                                      >
-                                        <path d="M0,0 L6,3 L0,6 Z" fill={strokeColor} />
-                                      </marker>
-                                    </defs>
                                     <circle cx="50" cy="16" r="8" fill="none" stroke={strokeColor} strokeWidth="3" />
                                     <line
                                       x1="50"
@@ -2191,38 +2179,6 @@ export default function PatientDetailPage() {
                                       strokeWidth="3"
                                       strokeLinecap="round"
                                     />
-                                    {/* trunk direction arrow */}
-                                    <line
-                                      x1="66"
-                                      y1="28"
-                                      x2={66 - trunkLean * 1.2}
-                                      y2="48"
-                                      stroke={strokeColor}
-                                      strokeWidth="2"
-                                      markerEnd={`url(#${label}-arrowhead)`}
-                                      opacity="0.9"
-                                    />
-                                    {/* knee alignment arrows */}
-                                    <line
-                                      x1="30"
-                                      y1="82"
-                                      x2={30 + kneeValgus * 1.2}
-                                      y2="94"
-                                      stroke={strokeColor}
-                                      strokeWidth="2"
-                                      markerEnd={`url(#${label}-arrowhead)`}
-                                      opacity="0.9"
-                                    />
-                                    <line
-                                      x1="70"
-                                      y1="82"
-                                      x2={70 - kneeValgus * 1.2}
-                                      y2="94"
-                                      stroke={strokeColor}
-                                      strokeWidth="2"
-                                      markerEnd={`url(#${label}-arrowhead)`}
-                                      opacity="0.9"
-                                    />
                                   </svg>
                                   <div className="text-[11px] text-muted-foreground">
                                     Score: {score ?? "N/A"}
@@ -2235,10 +2191,10 @@ export default function PatientDetailPage() {
                                   </div>
                                   <div className="mt-1 text-[10px] text-muted-foreground text-center leading-snug">
                                     {safeScore >= 80
-                                      ? "Arrow joints show stable trunk and improved knee tracking."
+                                      ? "Posture shows stable trunk and improved knee tracking."
                                       : safeScore >= 65
-                                      ? "Arrow joints show mild compensation; monitor trunk and knee drift."
-                                      : "Arrow joints show notable compensation needing correction cues."}
+                                      ? "Posture shows mild compensation; monitor trunk and knee drift."
+                                      : "Posture shows notable compensation needing correction cues."}
                                   </div>
                                 </div>
                               );
@@ -2299,15 +2255,15 @@ export default function PatientDetailPage() {
                                 Negative lean/collapse delta means improved control.
                               </div>
                               <div className="text-[10px] text-muted-foreground">
-                                Joint arrows compare where posture is shifting: trunk arrow highlights forward lean,
-                                knee arrows highlight inward collapse compensation.
+                                Visual posture compares where alignment is shifting: trunk position highlights forward
+                                lean, and knee position highlights inward collapse compensation.
                               </div>
                             </div>
                             <div className="rounded-lg border bg-muted/20 p-2.5 text-xs text-muted-foreground">
                               <div className="font-medium text-foreground mb-1">How to read</div>
                               <div>Greener, straighter posture = better form control.</div>
                               <div className="mt-1">Leaning trunk / knee collapse is visualized as lower quality.</div>
-                              <div className="mt-1">Arrow direction shows where compensation is moving frame-to-frame.</div>
+                              <div className="mt-1">Compare earlier vs latest figure alignment to track compensation changes.</div>
                             </div>
                           </div>
                         </div>
