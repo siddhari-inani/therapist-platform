@@ -3,7 +3,7 @@ import { createServiceClient } from "@/lib/supabase/service";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const webhookSecret = process.env.EXERCISE_VIDEO_WEBHOOK_SECRET;
   if (!webhookSecret) {
@@ -14,7 +14,7 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { id } = params;
+  const { id } = await params;
   const body = await request.json();
   const status = body?.status as "succeeded" | "failed" | undefined;
   const videoUrl = (body?.video_url as string | undefined)?.trim() || null;

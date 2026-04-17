@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { Suspense, useEffect, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Video } from "lucide-react";
@@ -20,7 +20,7 @@ import type { Appointment, MedicalRecord, MedicalRecordInsert, MedicalRecordUpda
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-export default function ChartingPage() {
+function ChartingPageContent() {
   const searchParams = useSearchParams();
   const appointmentId = searchParams.get("appointment");
   const recordId = searchParams.get("record");
@@ -564,5 +564,19 @@ export default function ChartingPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ChartingPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-6 md:p-8">
+          <div className="text-sm text-muted-foreground">Loading charting workspace...</div>
+        </div>
+      }
+    >
+      <ChartingPageContent />
+    </Suspense>
   );
 }

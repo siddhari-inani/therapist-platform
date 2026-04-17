@@ -95,6 +95,16 @@ type ExerciseVideoJob = {
   created_at: string;
 };
 
+type FormHistoryPoint = {
+  id: string;
+  sessionAt: string;
+  exerciseName: string;
+  formScore: number | null;
+  pain: number | null;
+  effort: number | null;
+  flags: string[];
+};
+
 export default function PatientDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -122,6 +132,7 @@ export default function PatientDetailPage() {
   const [exercisePlanItems, setExercisePlanItems] = useState<ExercisePlanItem[]>([]);
   const [exerciseRecommendations, setExerciseRecommendations] = useState<ExerciseRecommendation[]>([]);
   const [templateVideoJobs, setTemplateVideoJobs] = useState<Record<string, ExerciseVideoJob>>({});
+  const [formHistoryPoints, setFormHistoryPoints] = useState<FormHistoryPoint[]>([]);
   const [demoPlannerItems, setDemoPlannerItems] = useState<ExercisePlanItem[]>([]);
   const [demoPlannerRecommendations, setDemoPlannerRecommendations] = useState<
     ExerciseRecommendation[]
@@ -278,10 +289,15 @@ export default function PatientDetailPage() {
         .select("*")
         .eq("id", patientId)
         .eq("role", "patient")
-        .single();
+        .maybeSingle();
 
       if (patientError) {
-        console.error("Error fetching patient:", patientError);
+        // Avoid hard-failing the page for transient/permissions lookup errors.
+        console.warn("Unable to load patient profile:", patientError.message);
+        setLoading(false);
+        return;
+      }
+      if (!patientData) {
         setLoading(false);
         return;
       }
@@ -500,9 +516,11 @@ export default function PatientDetailPage() {
       if (activeOrFirstPlanId) {
         await fetchPlanItems(activeOrFirstPlanId);
         await fetchPlanRecommendations(activeOrFirstPlanId);
+        await fetchFormHistory(activeOrFirstPlanId);
       } else {
         setExercisePlanItems([]);
         setExerciseRecommendations([]);
+        setFormHistoryPoints([]);
       }
     } catch (error) {
       console.error("Error loading exercise planner data:", error);
@@ -530,6 +548,65 @@ export default function PatientDetailPage() {
       .eq("exercise_plan_id", planId)
       .order("created_at", { ascending: false });
     setExerciseRecommendations((data as ExerciseRecommendation[]) || []);
+  };
+
+  const fetchFormHistory = async (planId: string) => {
+    const { data: sessions } = await supabase
+      .from("exercise_sessions")
+      .select(
+        "id, started_at, average_pain_score, average_effort, exercise_plan_item_id, exercise_template_id"
+      )
+      .eq("patient_id", patientId)
+      .eq("exercise_plan_id", planId)
+      .order("started_at", { ascending: false })
+      .limit(12);
+
+    const sessionRows = (sessions as any[]) || [];
+    if (sessionRows.length === 0) {
+      setFormHistoryPoints([]);
+      return;
+    }
+
+    const sessionIds = sessionRows.map((s) => s.id);
+    const { data: feedbackRows } = await supabase
+      .from("exercise_form_feedback")
+      .select("exercise_session_id, form_score, flags")
+      .in("exercise_session_id", sessionIds);
+
+    const feedbackBySession = new Map<string, { form_score: number | null; flags: string[] | null }>();
+    (feedbackRows as any[] | null)?.forEach((row) => {
+      feedbackBySession.set(row.exercise_session_id, {
+        form_score: row.form_score ?? null,
+        flags: row.flags ?? null,
+      });
+    });
+
+    const nameByTemplate = new Map<string, string>();
+    exerciseTemplates.forEach((t) => nameByTemplate.set(t.id, t.name));
+
+    const history: FormHistoryPoint[] = sessionRows.map((session) => {
+      const feedback = feedbackBySession.get(session.id);
+      const inferredFormScore =
+        feedback?.form_score ??
+        Math.max(
+          50,
+          Math.min(
+            98,
+            92 - (session.average_pain_score ?? 0) * 8 - Math.max((session.average_effort ?? 5) - 6, 0) * 4
+          )
+        );
+      return {
+        id: session.id,
+        sessionAt: session.started_at,
+        exerciseName: nameByTemplate.get(session.exercise_template_id) || "Exercise",
+        formScore: inferredFormScore,
+        pain: session.average_pain_score ?? null,
+        effort: session.average_effort ?? null,
+        flags: Array.isArray(feedback?.flags) ? feedback!.flags! : [],
+      };
+    });
+
+    setFormHistoryPoints(history);
   };
 
   const handleCreateTemplate = async () => {
@@ -863,6 +940,70 @@ export default function PatientDetailPage() {
         .filter((rec) => rec.exercise_plan_id === selectedPlanId)
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     : exerciseRecommendations;
+  const demoFormHistory: FormHistoryPoint[] = isDemo
+    ? DEMO_EXERCISE_SESSIONS.filter(
+        (session) =>
+          session.patient_id === patientId &&
+          session.exercise_plan_id === (selectedPlanId || demoExercisePlan?.id)
+      )
+        .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime())
+        .slice(0, 12)
+        .map((session) => {
+          const templateId =
+            DEMO_EXERCISE_PLAN_ITEMS.find((item) => item.id === session.exercise_plan_item_id)
+              ?.exercise_template_id || "";
+          const exerciseName =
+            DEMO_EXERCISE_TEMPLATES.find((t) => t.id === templateId)?.name || "Exercise";
+          const lowerNotes = (session.notes || "").toLowerCase();
+          const flags: string[] = [];
+          if (lowerNotes.includes("knee")) flags.push("knee valgus risk");
+          if ((session.average_effort ?? 0) >= 7) flags.push("fatigue compensation");
+          if ((session.average_pain_score ?? 0) >= 3) flags.push("pain-guarding");
+          const inferredFormScore = Math.max(
+            55,
+            Math.min(
+              97,
+              92 -
+                (session.average_pain_score ?? 0) * 8 -
+                Math.max((session.average_effort ?? 5) - 6, 0) * 4
+            )
+          );
+          return {
+            id: session.id,
+            sessionAt: session.started_at,
+            exerciseName,
+            formScore: inferredFormScore,
+            pain: session.average_pain_score ?? null,
+            effort: session.average_effort ?? null,
+            flags,
+          };
+        })
+    : [];
+  const formHistoryForView = isDemo ? demoFormHistory : formHistoryPoints;
+  const openRecommendationsForView = recommendationsForView.filter((rec) => rec.status === "open").length;
+  const latestFormScore = formHistoryForView[0]?.formScore ?? null;
+  const oldestFormScore =
+    formHistoryForView.length > 1 ? formHistoryForView[formHistoryForView.length - 1]?.formScore : null;
+  const formTrendDelta =
+    latestFormScore !== null && oldestFormScore !== null ? latestFormScore - oldestFormScore : null;
+  const beforeFigureScore = oldestFormScore ?? latestFormScore;
+  const afterFigureScore = latestFormScore;
+  const avgFormScore =
+    formHistoryForView.length > 0
+      ? Math.round(
+          formHistoryForView.reduce((sum, point) => sum + (point.formScore ?? 0), 0) /
+            formHistoryForView.length
+        )
+      : null;
+  const flaggedSessionCount = formHistoryForView.filter((point) => point.flags.length > 0).length;
+  const beforeTrunkLean = beforeFigureScore !== null ? Math.max(0, 18 - beforeFigureScore / 6) : null;
+  const afterTrunkLean = afterFigureScore !== null ? Math.max(0, 18 - afterFigureScore / 6) : null;
+  const beforeKneeValgus = beforeFigureScore !== null ? Math.max(0, 12 - beforeFigureScore / 8) : null;
+  const afterKneeValgus = afterFigureScore !== null ? Math.max(0, 12 - afterFigureScore / 8) : null;
+  const formQualityLabel =
+    avgFormScore === null ? "No data" : avgFormScore >= 80 ? "Strong control" : avgFormScore >= 65 ? "Needs cueing" : "High correction need";
+  const trendLabel =
+    formTrendDelta === null ? "Trend unavailable" : formTrendDelta >= 0 ? "Improving form trend" : "Regressing form trend";
 
   if (loading) {
     return (
@@ -1510,13 +1651,23 @@ export default function PatientDetailPage() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Exercise Tracker</CardTitle>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <CardTitle>Exercise Tracker</CardTitle>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="px-2 py-1 rounded-full bg-primary/10 text-primary">
+                    {planItemsForView.length} exercises
+                  </span>
+                  <span className="px-2 py-1 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                    {openRecommendationsForView} open recs
+                  </span>
+                </div>
+              </div>
               <CardDescription>
                 View and manage this patient&apos;s exercise plan and recent exercise activity.
               </CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="space-y-6">
+                <div className="space-y-5">
                   {exerciseLoading && (
                     <div className="text-sm text-muted-foreground">
                       Loading exercise templates and plans...
@@ -1533,11 +1684,6 @@ export default function PatientDetailPage() {
                       )}
                       {demoExercisePlan && (
                         <>
-                          <img
-                            src="https://images.pexels.com/photos/3822906/pexels-photo-3822906.jpeg?auto=compress&cs=tinysrgb&w=1200"
-                            alt="Physical therapy exercise demo"
-                            className="w-full h-44 rounded-lg object-cover border"
-                          />
                           <div>
                             <h2 className="text-base font-semibold">{demoExercisePlan.title}</h2>
                             {demoExercisePlan.description && (
@@ -1700,7 +1846,8 @@ export default function PatientDetailPage() {
                     </div>
                   </div>
 
-                  <div className="rounded-lg border p-4 space-y-3">
+                  <div className="rounded-lg border p-4 space-y-3 bg-background/60">
+                    <div className="text-sm font-semibold">Plan Workspace</div>
                     <div className="flex flex-wrap gap-2">
                       {exercisePlans.length === 0 && (
                         <div className="text-sm text-muted-foreground">
@@ -1717,6 +1864,7 @@ export default function PatientDetailPage() {
                             if (!isDemo) {
                               await fetchPlanItems(plan.id);
                               await fetchPlanRecommendations(plan.id);
+                              await fetchFormHistory(plan.id);
                             }
                           }}
                         >
@@ -1737,8 +1885,9 @@ export default function PatientDetailPage() {
 
                   {selectedPlanId && (
                     <div className="space-y-4">
-                      <div className="rounded-lg border bg-muted/20 p-4 space-y-3">
-                        <div className="text-sm font-semibold">Add Exercise To Selected Plan</div>
+                      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                        <div className="rounded-lg border bg-muted/20 p-4 space-y-3 xl:col-span-1">
+                          <div className="text-sm font-semibold">Add Exercise To Selected Plan</div>
                         <select
                           className="w-full rounded-md border bg-background px-3 py-2 text-sm"
                           value={newItemTemplateId}
@@ -1792,70 +1941,433 @@ export default function PatientDetailPage() {
                         <Button size="sm" onClick={handleAddPlanItem} disabled={!newItemTemplateId}>
                           Add item
                         </Button>
-                      </div>
+                        </div>
 
-                      <div className="space-y-2">
-                        {planItemsForView.length === 0 && (
-                          <div className="text-sm text-muted-foreground">
-                            No items in this plan yet.
-                          </div>
-                        )}
-                        {planItemsForView.map((item, index) => (
-                          <div
-                            key={item.id}
-                            className="border rounded-lg p-3 bg-muted/40 flex flex-col gap-2"
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <div className="font-medium">
-                                  #{item.sequence_order} {item.exercise_templates?.name ?? "Exercise"}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  {item.sets ? `${item.sets} sets` : "-"} |{" "}
-                                  {item.reps ? `${item.reps} reps` : "-"} |{" "}
-                                  {item.hold_seconds ? `${item.hold_seconds}s hold` : "-"} |{" "}
-                                  {item.frequency_per_week ? `${item.frequency_per_week}x/week` : "-"}
-                                </div>
-                                {item.days_of_week && item.days_of_week.length > 0 && (
-                                  <div className="text-xs text-muted-foreground">
-                                    Days: {item.days_of_week.join(", ")}
+                        <div className="space-y-2 xl:col-span-2">
+                          <div className="text-sm font-semibold">Current Plan Items</div>
+                          {planItemsForView.length === 0 && (
+                            <div className="text-sm text-muted-foreground rounded-lg border p-4 bg-muted/20">
+                              No items in this plan yet.
+                            </div>
+                          )}
+                          {planItemsForView.map((item, index) => (
+                            <div
+                              key={item.id}
+                              className="border rounded-lg p-3 bg-muted/40 flex flex-col gap-2"
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <div className="font-medium">
+                                    #{item.sequence_order} {item.exercise_templates?.name ?? "Exercise"}
                                   </div>
-                                )}
-                                {item.notes && (
-                                  <div className="text-xs text-muted-foreground mt-1">{item.notes}</div>
-                                )}
-                              </div>
-                              <div className="flex gap-1">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleMovePlanItem(item.id, "up")}
-                                  disabled={index === 0}
-                                >
-                                  Up
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleMovePlanItem(item.id, "down")}
-                                  disabled={index === planItemsForView.length - 1}
-                                >
-                                  Down
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleDeletePlanItem(item.id)}
-                                >
-                                  Remove
-                                </Button>
+                                  <div className="text-xs text-muted-foreground">
+                                    {item.sets ? `${item.sets} sets` : "-"} |{" "}
+                                    {item.reps ? `${item.reps} reps` : "-"} |{" "}
+                                    {item.hold_seconds ? `${item.hold_seconds}s hold` : "-"} |{" "}
+                                    {item.frequency_per_week ? `${item.frequency_per_week}x/week` : "-"}
+                                  </div>
+                                  {item.days_of_week && item.days_of_week.length > 0 && (
+                                    <div className="text-xs text-muted-foreground">
+                                      Days: {item.days_of_week.join(", ")}
+                                    </div>
+                                  )}
+                                  {item.notes && (
+                                    <div className="text-xs text-muted-foreground mt-1">{item.notes}</div>
+                                  )}
+                                </div>
+                                <div className="flex gap-1">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleMovePlanItem(item.id, "up")}
+                                    disabled={index === 0}
+                                  >
+                                    Up
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleMovePlanItem(item.id, "down")}
+                                    disabled={index === planItemsForView.length - 1}
+                                  >
+                                    Down
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleDeletePlanItem(item.id)}
+                                  >
+                                    Remove
+                                  </Button>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}
+
+                  <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-gradient-to-br from-white to-slate-50/80 dark:from-slate-900/85 dark:to-slate-950/70 p-4 md:p-5 space-y-4 shadow-sm ring-1 ring-white/40 dark:ring-white/5">
+                    <div className="space-y-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="text-base font-semibold flex items-center gap-2">
+                            <span className="inline-block h-2 w-2 rounded-full bg-primary" />
+                            Form Correction History
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            Longitudinal view of form quality, pain, and correction flags.
+                          </div>
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="text-[11px] px-2 py-1 rounded-full bg-primary/10 text-primary">
+                              {formQualityLabel}
+                            </span>
+                            <span
+                              className={`text-[11px] px-2 py-1 rounded-full ${
+                                formTrendDelta === null
+                                  ? "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                                  : formTrendDelta >= 0
+                                  ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                                  : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                              }`}
+                            >
+                              {trendLabel}
+                            </span>
+                          </div>
+                        </div>
+                        {formTrendDelta !== null && (
+                          <div
+                            className={`text-xs px-2.5 py-1 rounded-md border font-medium ${
+                              formTrendDelta >= 0
+                                ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800"
+                                : "bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800"
+                            }`}
+                          >
+                            {formTrendDelta >= 0 ? "+" : ""}
+                            {formTrendDelta.toFixed(0)} pts
+                          </div>
+                        )}
+                      </div>
+
+                    {formHistoryForView.length > 0 && (
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        <div className="rounded-lg border bg-background/85 px-3 py-2.5">
+                          <div className="text-[10px] uppercase text-muted-foreground">Sessions</div>
+                          <div className="text-sm font-semibold">{formHistoryForView.length}</div>
+                        </div>
+                        <div className="rounded-lg border bg-background/85 px-3 py-2.5">
+                          <div className="text-[10px] uppercase text-muted-foreground">Avg score</div>
+                          <div className="text-sm font-semibold">{avgFormScore ?? "N/A"}</div>
+                        </div>
+                        <div className="rounded-lg border bg-background/85 px-3 py-2.5">
+                          <div className="text-[10px] uppercase text-muted-foreground">Flags hit</div>
+                          <div className="text-sm font-semibold">{flaggedSessionCount}</div>
+                        </div>
+                        <div className="rounded-lg border bg-background/85 px-3 py-2.5">
+                          <div className="text-[10px] uppercase text-muted-foreground">Trend</div>
+                          <div
+                            className={`text-sm font-semibold ${
+                              formTrendDelta !== null && formTrendDelta >= 0
+                                ? "text-green-600 dark:text-green-300"
+                                : "text-red-600 dark:text-red-300"
+                            }`}
+                          >
+                            {formTrendDelta !== null
+                              ? `${formTrendDelta >= 0 ? "+" : ""}${formTrendDelta.toFixed(0)}`
+                              : "N/A"}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {formHistoryForView.length === 0 && (
+                      <div className="text-sm text-muted-foreground rounded-xl border border-dashed p-4 bg-background/50">
+                        No form history yet. Session feedback will appear here after exercise logs.
+                      </div>
+                    )}
+
+                    {formHistoryForView.length > 0 && (
+                      <div className="space-y-3">
+                        <div className="rounded-xl border bg-background/90 p-3 md:p-4">
+                          <div className="text-xs font-semibold text-muted-foreground mb-2">
+                            Visual Form Progress
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-center">
+                            {[
+                              { label: "Earlier", score: beforeFigureScore },
+                              { label: "Latest", score: afterFigureScore },
+                            ].map(({ label, score }) => {
+                              const safeScore = Math.max(0, Math.min(100, score ?? 0));
+                              const trunkLean = Math.max(0, 18 - safeScore / 6);
+                              const kneeValgus = Math.max(0, 12 - safeScore / 8);
+                              const strokeColor =
+                                safeScore >= 80 ? "#22c55e" : safeScore >= 65 ? "#f59e0b" : "#ef4444";
+                              return (
+                                <div
+                                  key={label}
+                                  className="rounded-md border bg-muted/20 p-2 flex flex-col items-center"
+                                >
+                                  <div className="text-[11px] font-medium mb-1">{label}</div>
+                                  <svg
+                                    viewBox="0 0 100 120"
+                                    className="h-24 w-20"
+                                    role="img"
+                                    aria-label={`${label} form stick figure`}
+                                  >
+                                    <defs>
+                                      <marker
+                                        id={`${label}-arrowhead`}
+                                        markerWidth="6"
+                                        markerHeight="6"
+                                        refX="5"
+                                        refY="3"
+                                        orient="auto"
+                                      >
+                                        <path d="M0,0 L6,3 L0,6 Z" fill={strokeColor} />
+                                      </marker>
+                                    </defs>
+                                    <circle cx="50" cy="16" r="8" fill="none" stroke={strokeColor} strokeWidth="3" />
+                                    <line
+                                      x1="50"
+                                      y1="24"
+                                      x2={50 - trunkLean}
+                                      y2="58"
+                                      stroke={strokeColor}
+                                      strokeWidth="3"
+                                      strokeLinecap="round"
+                                    />
+                                    <line
+                                      x1={50 - trunkLean}
+                                      y1="34"
+                                      x2={34 - trunkLean / 2}
+                                      y2="48"
+                                      stroke={strokeColor}
+                                      strokeWidth="3"
+                                      strokeLinecap="round"
+                                    />
+                                    <line
+                                      x1={50 - trunkLean}
+                                      y1="34"
+                                      x2={66 - trunkLean / 2}
+                                      y2="48"
+                                      stroke={strokeColor}
+                                      strokeWidth="3"
+                                      strokeLinecap="round"
+                                    />
+                                    <line
+                                      x1={50 - trunkLean}
+                                      y1="58"
+                                      x2={42 + kneeValgus / 2}
+                                      y2="84"
+                                      stroke={strokeColor}
+                                      strokeWidth="3"
+                                      strokeLinecap="round"
+                                    />
+                                    <line
+                                      x1={50 - trunkLean}
+                                      y1="58"
+                                      x2={58 - kneeValgus / 2}
+                                      y2="84"
+                                      stroke={strokeColor}
+                                      strokeWidth="3"
+                                      strokeLinecap="round"
+                                    />
+                                    <line
+                                      x1={42 + kneeValgus / 2}
+                                      y1="84"
+                                      x2={38 + kneeValgus}
+                                      y2="108"
+                                      stroke={strokeColor}
+                                      strokeWidth="3"
+                                      strokeLinecap="round"
+                                    />
+                                    <line
+                                      x1={58 - kneeValgus / 2}
+                                      y1="84"
+                                      x2={62 - kneeValgus}
+                                      y2="108"
+                                      stroke={strokeColor}
+                                      strokeWidth="3"
+                                      strokeLinecap="round"
+                                    />
+                                    {/* trunk direction arrow */}
+                                    <line
+                                      x1="66"
+                                      y1="28"
+                                      x2={66 - trunkLean * 1.2}
+                                      y2="48"
+                                      stroke={strokeColor}
+                                      strokeWidth="2"
+                                      markerEnd={`url(#${label}-arrowhead)`}
+                                      opacity="0.9"
+                                    />
+                                    {/* knee alignment arrows */}
+                                    <line
+                                      x1="30"
+                                      y1="82"
+                                      x2={30 + kneeValgus * 1.2}
+                                      y2="94"
+                                      stroke={strokeColor}
+                                      strokeWidth="2"
+                                      markerEnd={`url(#${label}-arrowhead)`}
+                                      opacity="0.9"
+                                    />
+                                    <line
+                                      x1="70"
+                                      y1="82"
+                                      x2={70 - kneeValgus * 1.2}
+                                      y2="94"
+                                      stroke={strokeColor}
+                                      strokeWidth="2"
+                                      markerEnd={`url(#${label}-arrowhead)`}
+                                      opacity="0.9"
+                                    />
+                                  </svg>
+                                  <div className="text-[11px] text-muted-foreground">
+                                    Score: {score ?? "N/A"}
+                                  </div>
+                                  <div className="mt-1 text-[10px] text-muted-foreground text-center">
+                                    Trunk lean: {trunkLean.toFixed(1)} deg
+                                  </div>
+                                  <div className="text-[10px] text-muted-foreground text-center">
+                                    Knee collapse: {kneeValgus.toFixed(1)} deg
+                                  </div>
+                                  <div className="mt-1 text-[10px] text-muted-foreground text-center leading-snug">
+                                    {safeScore >= 80
+                                      ? "Arrow joints show stable trunk and improved knee tracking."
+                                      : safeScore >= 65
+                                      ? "Arrow joints show mild compensation; monitor trunk and knee drift."
+                                      : "Arrow joints show notable compensation needing correction cues."}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                            <div className="rounded-lg border bg-muted/20 p-2.5 text-xs space-y-2">
+                              <div className="font-medium text-foreground">Difference</div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-muted-foreground">Form score</span>
+                                <span
+                                  className={`font-medium ${
+                                    formTrendDelta !== null && formTrendDelta >= 0
+                                      ? "text-green-600 dark:text-green-300"
+                                      : "text-red-600 dark:text-red-300"
+                                  }`}
+                                >
+                                  {formTrendDelta !== null
+                                    ? `${formTrendDelta >= 0 ? "+" : ""}${formTrendDelta.toFixed(0)}`
+                                    : "N/A"}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-muted-foreground">Trunk lean</span>
+                                <span
+                                  className={`font-medium ${
+                                    beforeTrunkLean !== null &&
+                                    afterTrunkLean !== null &&
+                                    afterTrunkLean <= beforeTrunkLean
+                                      ? "text-green-600 dark:text-green-300"
+                                      : "text-red-600 dark:text-red-300"
+                                  }`}
+                                >
+                                  {beforeTrunkLean !== null && afterTrunkLean !== null
+                                    ? `${afterTrunkLean <= beforeTrunkLean ? "-" : "+"}${Math.abs(
+                                        afterTrunkLean - beforeTrunkLean
+                                      ).toFixed(1)} deg`
+                                    : "N/A"}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-muted-foreground">Knee collapse</span>
+                                <span
+                                  className={`font-medium ${
+                                    beforeKneeValgus !== null &&
+                                    afterKneeValgus !== null &&
+                                    afterKneeValgus <= beforeKneeValgus
+                                      ? "text-green-600 dark:text-green-300"
+                                      : "text-red-600 dark:text-red-300"
+                                  }`}
+                                >
+                                  {beforeKneeValgus !== null && afterKneeValgus !== null
+                                    ? `${afterKneeValgus <= beforeKneeValgus ? "-" : "+"}${Math.abs(
+                                        afterKneeValgus - beforeKneeValgus
+                                      ).toFixed(1)} deg`
+                                    : "N/A"}
+                                </span>
+                              </div>
+                              <div className="pt-1 border-t text-[10px] text-muted-foreground">
+                                Negative lean/collapse delta means improved control.
+                              </div>
+                              <div className="text-[10px] text-muted-foreground">
+                                Joint arrows compare where posture is shifting: trunk arrow highlights forward lean,
+                                knee arrows highlight inward collapse compensation.
+                              </div>
+                            </div>
+                            <div className="rounded-lg border bg-muted/20 p-2.5 text-xs text-muted-foreground">
+                              <div className="font-medium text-foreground mb-1">How to read</div>
+                              <div>Greener, straighter posture = better form control.</div>
+                              <div className="mt-1">Leaning trunk / knee collapse is visualized as lower quality.</div>
+                              <div className="mt-1">Arrow direction shows where compensation is moving frame-to-frame.</div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2.5">
+                        {formHistoryForView.map((point) => {
+                          const safeScore = Math.max(0, Math.min(100, point.formScore ?? 0));
+                          const scoreColor =
+                            safeScore >= 80
+                              ? "bg-green-500"
+                              : safeScore >= 65
+                              ? "bg-amber-500"
+                              : "bg-red-500";
+                          return (
+                            <div
+                              key={point.id}
+                              className="rounded-lg border bg-background/90 p-3 space-y-1.5 relative overflow-hidden hover:border-primary/40 transition-colors"
+                            >
+                              <div className={`absolute left-0 top-0 h-full w-1.5 ${scoreColor}`} />
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="text-xs font-medium pl-2">
+                                  {new Date(point.sessionAt).toLocaleDateString()} - {point.exerciseName}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  Pain {point.pain ?? "-"} | Effort {point.effort ?? "-"}
+                                </div>
+                              </div>
+                              <div className="h-2 rounded bg-slate-200 dark:bg-slate-800 overflow-hidden ml-2">
+                                <div
+                                  className={`h-full ${scoreColor}`}
+                                  style={{ width: `${Math.max(6, safeScore)}%` }}
+                                />
+                              </div>
+                              <div className="flex items-center justify-between gap-2 pl-2">
+                                <div className="text-[11px] text-muted-foreground">
+                                  Form score: {point.formScore ?? "N/A"}
+                                </div>
+                                <div className="flex flex-wrap gap-1 justify-end">
+                                  {point.flags.length === 0 && (
+                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-muted-foreground">
+                                      no correction flags
+                                    </span>
+                                  )}
+                                  {point.flags.map((flag) => (
+                                    <span
+                                      key={`${point.id}-${flag}`}
+                                      className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary"
+                                    >
+                                      {flag}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        </div>
+                      </div>
+                    )}
+                    </div>
+                  </div>
                 </div>
             </CardContent>
           </Card>
@@ -1877,7 +2389,8 @@ export default function PatientDetailPage() {
 
                   {selectedPlanId && (
                     <>
-                      <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+                      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                        <div className="rounded-lg border bg-muted/30 p-4 space-y-3 xl:col-span-1">
                         <div className="text-sm font-semibold">
                           Add Recommendation To Selected Plan
                         </div>
@@ -1900,36 +2413,38 @@ export default function PatientDetailPage() {
                         >
                           Save recommendation
                         </Button>
-                      </div>
+                        </div>
 
-                      <div className="space-y-2">
-                        {recommendationsForView.length === 0 && (
-                          <div className="text-sm text-muted-foreground">
-                            No recommendations yet for this selected plan.
-                          </div>
-                        )}
-                        {recommendationsForView.map((rec) => (
-                          <div
-                            key={rec.id}
-                            className="border rounded-lg p-3 bg-muted/40 flex flex-col gap-1"
-                          >
-                            <div className="flex justify-between items-center">
-                              <div className="font-medium">{rec.title}</div>
-                              <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                                {rec.recommendation_type}
-                              </span>
+                        <div className="space-y-2 xl:col-span-2">
+                          <div className="text-sm font-semibold">Recommendation History</div>
+                          {recommendationsForView.length === 0 && (
+                            <div className="text-sm text-muted-foreground rounded-lg border p-4 bg-muted/20">
+                              No recommendations yet for this selected plan.
                             </div>
-                            {rec.body && (
-                              <div className="text-sm text-muted-foreground whitespace-pre-line">
-                                {rec.body}
+                          )}
+                          {recommendationsForView.map((rec) => (
+                            <div
+                              key={rec.id}
+                              className="border rounded-lg p-3 bg-muted/40 flex flex-col gap-1"
+                            >
+                              <div className="flex justify-between items-center">
+                                <div className="font-medium">{rec.title}</div>
+                                <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                                  {rec.recommendation_type}
+                                </span>
                               </div>
-                            )}
-                            <div className="text-xs text-muted-foreground flex justify-between mt-1">
-                              <span>{new Date(rec.created_at).toLocaleDateString()}</span>
-                              <span className="capitalize">{rec.status}</span>
+                              {rec.body && (
+                                <div className="text-sm text-muted-foreground whitespace-pre-line">
+                                  {rec.body}
+                                </div>
+                              )}
+                              <div className="text-xs text-muted-foreground flex justify-between mt-1">
+                                <span>{new Date(rec.created_at).toLocaleDateString()}</span>
+                                <span className="capitalize">{rec.status}</span>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
                     </>
                   )}

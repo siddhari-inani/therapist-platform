@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { Suspense, useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   CreditCard,
@@ -67,7 +67,7 @@ function formatDate(iso: string): string {
   });
 }
 
-export default function PaymentsPage() {
+function PaymentsPageContent() {
   const searchParams = useSearchParams();
   const [stripeConnected, setStripeConnected] = useState<boolean | null>(null);
   const [connectingStripe, setConnectingStripe] = useState(false);
@@ -409,5 +409,19 @@ export default function PaymentsPage() {
         </Card>
       </section>
     </div>
+  );
+}
+
+export default function PaymentsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-6 md:p-8">
+          <div className="text-sm text-muted-foreground">Loading payments...</div>
+        </div>
+      }
+    >
+      <PaymentsPageContent />
+    </Suspense>
   );
 }

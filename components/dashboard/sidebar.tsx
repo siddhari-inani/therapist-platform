@@ -153,7 +153,15 @@ export function Sidebar() {
       <div className="border-t border-white/40 dark:border-white/10 p-3 space-y-2">
         <div className="flex items-center gap-3 rounded-xl bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm border border-white/60 dark:border-white/5 px-3 py-2.5">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary font-semibold text-sm">
-            {(displayProfile?.full_name || displayProfile?.email || "U")[0].toUpperCase()}
+            {displayProfile?.avatar_url ? (
+              <img
+                src={displayProfile.avatar_url}
+                alt={displayProfile?.full_name || "User avatar"}
+                className="h-9 w-9 rounded-full object-cover"
+              />
+            ) : (
+              (displayProfile?.full_name || displayProfile?.email || "U")[0].toUpperCase()
+            )}
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">

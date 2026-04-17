@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { Suspense, useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ import { getDemoConversations, DEMO_THERAPIST_ID, DEMO_MESSAGES } from "@/lib/de
 import type { Message, Profile } from "@/types/database.types";
 import { MessageSquare, Pencil } from "lucide-react";
 
-export default function MessagesPage() {
+function MessagesPageContent() {
   const searchParams = useSearchParams();
   const patientIdFromUrl = searchParams.get("patient");
   const [userId, setUserId] = useState<string | null>(null);
@@ -185,5 +185,19 @@ export default function MessagesPage() {
         defaultRecipientId={patientIdFromUrl ?? undefined}
       />
     </div>
+  );
+}
+
+export default function MessagesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-6 md:p-8">
+          <div className="text-sm text-muted-foreground">Loading messages...</div>
+        </div>
+      }
+    >
+      <MessagesPageContent />
+    </Suspense>
   );
 }

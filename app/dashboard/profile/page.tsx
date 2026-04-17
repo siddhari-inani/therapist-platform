@@ -116,7 +116,15 @@ export default function ProfilePage() {
           <div className="flex items-start justify-between">
             <div className="flex gap-4">
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-lime-600 flex items-center justify-center text-white text-xl font-semibold">
-                {(profile.full_name || profile.email || "U")[0].toUpperCase()}
+                {profile.avatar_url ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt={profile.full_name || "Therapist avatar"}
+                    className="h-16 w-16 rounded-full object-cover"
+                  />
+                ) : (
+                  (profile.full_name || profile.email || "U")[0].toUpperCase()
+                )}
               </div>
               <div>
                 <CardTitle className="text-xl">

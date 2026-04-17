@@ -278,7 +278,15 @@ function PatientCard({ patient, isDemo }: { patient: Profile; isDemo?: boolean }
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-lime-600 flex items-center justify-center text-white font-bold text-lg shadow-lg ring-2 ring-primary/20 group-hover:scale-110 transition-transform">
-                {(patient.full_name || patient.email || "P")[0].toUpperCase()}
+                {patient.avatar_url ? (
+                  <img
+                    src={patient.avatar_url}
+                    alt={patient.full_name || "Patient avatar"}
+                    className="h-12 w-12 rounded-full object-cover"
+                  />
+                ) : (
+                  (patient.full_name || patient.email || "P")[0].toUpperCase()
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <CardTitle className="text-lg font-bold text-slate-900 dark:text-slate-100 group-hover:text-primary transition-colors">
