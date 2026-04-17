@@ -99,13 +99,13 @@ export default function DebugPage() {
               <div className="space-y-2">
                 <div>
                   <strong>Supabase URL:</strong> {checks.envUrl}
-                  <div className="text-xs text-muted-foreground mt-1 font-mono">
+                  <div className="text-xs text-muted-foreground mt-1">
                     {checks.envUrlValue}
                   </div>
                 </div>
                 <div>
                   <strong>Supabase Key:</strong> {checks.envKey}
-                  <div className="text-xs text-muted-foreground mt-1 font-mono">
+                  <div className="text-xs text-muted-foreground mt-1">
                     {checks.envKeyPreview}
                   </div>
                   {checks.keyFormat && (

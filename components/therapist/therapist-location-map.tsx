@@ -160,7 +160,7 @@ export function TherapistLocationMap({
 
           if (address) {
             const infoWindow = new window.google.maps.InfoWindow({
-              content: `<div style="padding: 8px; font-family: system-ui, sans-serif; max-width: 200px;"><strong>${address}</strong></div>`,
+              content: `<div style="padding: 8px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; max-width: 200px;"><strong>${address}</strong></div>`,
             });
 
             marker.addListener("click", () => {

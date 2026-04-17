@@ -1649,7 +1649,7 @@ export default function PatientDetailPage() {
 
       {activeTab === "exercise" && (
         <div className="space-y-6">
-          <Card className="border-slate-200/80 bg-white/85 shadow-sm ring-1 ring-slate-100 dark:ring-0">
+          <Card className="border-slate-200/80 bg-white/85 shadow-sm ring-1 ring-slate-100 dark:ring-0 dark:bg-slate-900/80 dark:border-slate-800">
             <CardHeader>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <CardTitle>Exercise Tracker</CardTitle>
@@ -1675,7 +1675,7 @@ export default function PatientDetailPage() {
                   )}
 
                   {isDemo && (
-                    <div className="rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50 to-white p-4 space-y-3 shadow-sm dark:border-slate-800 dark:bg-muted/20">
+                    <div className="rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50 to-white p-4 space-y-3 shadow-sm dark:border-slate-800 dark:from-slate-900/70 dark:to-slate-950/60">
                       <div className="text-sm font-semibold">Current Demo Exercise Snapshot</div>
                       {!demoExercisePlan && (
                         <div className="text-sm text-muted-foreground">
@@ -1754,7 +1754,7 @@ export default function PatientDetailPage() {
                   )}
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div className="rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50 to-white p-4 space-y-3 shadow-sm dark:border-slate-800 dark:bg-muted/30">
+                    <div className="rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50 to-white p-4 space-y-3 shadow-sm dark:border-slate-800 dark:from-slate-900/70 dark:to-slate-950/60">
                       <div className="text-sm font-semibold">Create Exercise Template</div>
                       <input
                         className="w-full rounded-md border bg-background px-3 py-2 text-sm"
@@ -1826,7 +1826,7 @@ export default function PatientDetailPage() {
                       </div>
                     </div>
 
-                    <div className="rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50 to-white p-4 space-y-3 shadow-sm dark:border-slate-800 dark:bg-muted/30">
+                    <div className="rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50 to-white p-4 space-y-3 shadow-sm dark:border-slate-800 dark:from-slate-900/70 dark:to-slate-950/60">
                       <div className="text-sm font-semibold">Create Patient Plan</div>
                       <input
                         className="w-full rounded-md border bg-background px-3 py-2 text-sm"
@@ -1846,7 +1846,7 @@ export default function PatientDetailPage() {
                     </div>
                   </div>
 
-                  <div className="rounded-xl border border-slate-200/80 p-4 space-y-3 bg-gradient-to-br from-white to-slate-50/80 shadow-sm dark:border-slate-800 dark:bg-background/60">
+                  <div className="rounded-xl border border-slate-200/80 p-4 space-y-3 bg-gradient-to-br from-white to-slate-50/80 shadow-sm dark:border-slate-800 dark:from-slate-900/75 dark:to-slate-950/65">
                     <div className="text-sm font-semibold">Plan Workspace</div>
                     <div className="flex flex-wrap gap-2">
                       {exercisePlans.length === 0 && (
@@ -1886,7 +1886,7 @@ export default function PatientDetailPage() {
                   {selectedPlanId && (
                     <div className="space-y-4">
                       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-                        <div className="rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50 to-white p-4 space-y-3 shadow-sm xl:col-span-1 dark:border-slate-800 dark:bg-muted/20">
+                        <div className="rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50 to-white p-4 space-y-3 shadow-sm xl:col-span-1 dark:border-slate-800 dark:from-slate-900/70 dark:to-slate-950/60">
                           <div className="text-sm font-semibold">Add Exercise To Selected Plan</div>
                         <select
                           className="w-full rounded-md border bg-background px-3 py-2 text-sm"
@@ -2372,7 +2372,7 @@ export default function PatientDetailPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200/80 bg-white/85 shadow-sm ring-1 ring-slate-100 dark:ring-0">
+          <Card className="border-slate-200/80 bg-white/85 shadow-sm ring-1 ring-slate-100 dark:ring-0 dark:bg-slate-900/80 dark:border-slate-800">
             <CardHeader>
               <CardTitle>Exercise Recommendations</CardTitle>
               <CardDescription>
@@ -2390,7 +2390,7 @@ export default function PatientDetailPage() {
                   {selectedPlanId && (
                     <>
                       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-                        <div className="rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50 to-white p-4 space-y-3 shadow-sm xl:col-span-1 dark:border-slate-800 dark:bg-muted/30">
+                        <div className="rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50 to-white p-4 space-y-3 shadow-sm xl:col-span-1 dark:border-slate-800 dark:from-slate-900/70 dark:to-slate-950/60">
                         <div className="text-sm font-semibold">
                           Add Recommendation To Selected Plan
                         </div>

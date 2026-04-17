@@ -50,7 +50,7 @@ export async function sendAppointmentReminderEmail(
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${subject}</title>
 </head>
-<body style="font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; color: #334155; max-width: 560px; margin: 0 auto; padding: 24px;">
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #334155; max-width: 560px; margin: 0 auto; padding: 24px;">
   <h1 style="font-size: 1.25rem; color: #0f172a;">Appointment reminder</h1>
   <p>Hi${patientName ? ` ${patientName}` : ""},</p>
   <p>This is a reminder that you have an upcoming appointment:</p>

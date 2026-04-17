@@ -87,7 +87,7 @@ export function Sidebar() {
   const displayProfile = isDemo ? (DEMO_THERAPIST as Profile) : profile;
 
   return (
-    <aside className="flex h-screen w-64 shrink-0 flex-col border-r border-white/40 dark:border-white/10 bg-white/60 dark:bg-slate-950/80 backdrop-blur-xl shadow-xl shadow-slate-200/30 dark:shadow-black/20">
+    <aside className="sticky top-0 self-start flex h-screen w-64 shrink-0 flex-col border-r border-white/40 dark:border-white/10 bg-white/60 dark:bg-slate-950/80 backdrop-blur-xl shadow-xl shadow-slate-200/30 dark:shadow-black/20">
       {/* Header */}
       <div className="flex h-16 items-center gap-3 px-5 border-b border-white/40 dark:border-white/10">
         <img src="/platform-logo.png" alt="Revora Health logo" className="h-9 w-9 shrink-0 object-contain" />
@@ -97,7 +97,7 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-0.5 p-3 overflow-y-auto">
+      <nav className="flex-1 space-y-0.5 p-3 overflow-y-hidden">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
