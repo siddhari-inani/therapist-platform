@@ -1,13 +1,31 @@
 /**
  * Google Gemini API helpers (REST).
- * Uses GEMINI_API_KEY from env. Get a key at https://aistudio.google.com/apikey
+ * Uses GEMINI_API_KEY (or GOOGLE_API_KEY / GOOGLE_GENERATIVE_AI_API_KEY) from env.
+ * Get a key at https://aistudio.google.com/apikey
  */
 
 const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 const DEFAULT_MODEL = "gemini-2.5-flash";
 
 function getApiKey(): string | undefined {
-  return process.env.GEMINI_API_KEY;
+  return (
+    process.env.GEMINI_API_KEY ??
+    process.env.GOOGLE_API_KEY ??
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY
+  );
+}
+
+type GeminiApiKeySource =
+  | "GEMINI_API_KEY"
+  | "GOOGLE_API_KEY"
+  | "GOOGLE_GENERATIVE_AI_API_KEY"
+  | "missing";
+
+export function getGeminiApiKeySource(): GeminiApiKeySource {
+  if (process.env.GEMINI_API_KEY) return "GEMINI_API_KEY";
+  if (process.env.GOOGLE_API_KEY) return "GOOGLE_API_KEY";
+  if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) return "GOOGLE_GENERATIVE_AI_API_KEY";
+  return "missing";
 }
 
 function getModel(): string {
@@ -35,7 +53,11 @@ export async function generateContent(
 ): Promise<GeminiGenerateContentResult> {
   const apiKey = getApiKey();
   if (!apiKey) {
-    return { ok: false, error: "GEMINI_API_KEY is not set.", status: 503 };
+    return {
+      ok: false,
+      error: "Gemini API key is missing. Set GEMINI_API_KEY, GOOGLE_API_KEY, or GOOGLE_GENERATIVE_AI_API_KEY.",
+      status: 503,
+    };
   }
 
   const modelId = model ?? getModel();

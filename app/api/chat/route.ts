@@ -90,12 +90,19 @@ export async function POST(request: NextRequest) {
     if (!result.ok) {
       console.error("Gemini API Error:", result.status, result.error);
       const isQuotaOrBilling =
-        result.status === 429 ||
-        result.status === 503 ||
-        /quota|billing|insufficient|limit exceeded|api key/i.test(result.error);
+        result.status === 429 || /quota|billing|insufficient|limit exceeded|resource_exhausted/i.test(result.error);
+      const isApiKeyOrAuthIssue =
+        result.status === 401 ||
+        result.status === 403 ||
+        /api key|invalid key|permission|unauthorized|forbidden/i.test(result.error);
       if (isQuotaOrBilling) {
         return NextResponse.json({
-          message: "Gemini quota exceeded or API key issue. Check your key at https://aistudio.google.com/apikey — AI chat will work again after you update your account.",
+          message: "Gemini quota exceeded. Check quotas at https://aistudio.google.com/apikey — AI chat will work again after you update your account.",
+        });
+      }
+      if (isApiKeyOrAuthIssue) {
+        return NextResponse.json({
+          message: "Gemini API key issue. Check your key at https://aistudio.google.com/apikey — AI chat will work again after you update your account.",
         });
       }
       const lastUserMessage = messages

@@ -24,6 +24,11 @@ The AI assistant (Clara) uses **Google Gemini** for physical therapy answers, vo
      ```
      GEMINI_API_KEY=your-gemini-api-key-here
      ```
+   - For Vercel deployments, add the same value in project env vars (`Production` + `Preview`):
+     ```bash
+     echo "your-gemini-api-key-here" | vercel env add GEMINI_API_KEY production preview
+     ```
+   - If you already use Google SDK naming, `GOOGLE_API_KEY` and `GOOGLE_GENERATIVE_AI_API_KEY` are also supported.
 
 3. **Restart Your Development Server**
    - The app will use Gemini for AI chat, voice “Structure as SOAP”, and audio transcription

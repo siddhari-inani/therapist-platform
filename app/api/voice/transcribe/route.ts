@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateContent } from "@/lib/gemini";
+import { generateContent, isGeminiConfigured } from "@/lib/gemini";
 
 /**
  * Transcribe audio using Google Gemini (multimodal: audio + text prompt).
@@ -25,10 +25,9 @@ function getMimeType(filename: string): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
+    if (!isGeminiConfigured()) {
       return NextResponse.json(
-        { error: "GEMINI_API_KEY is not set. Add it to enable audio transcription." },
+        { error: "Gemini API key is not set. Add GEMINI_API_KEY (or GOOGLE_API_KEY / GOOGLE_GENERATIVE_AI_API_KEY)." },
         { status: 503 }
       );
     }
@@ -84,12 +83,20 @@ export async function POST(request: NextRequest) {
     if (!result.ok) {
       const message = result.error ?? "";
       const isQuotaOrBilling =
-        result.status === 429 ||
-        result.status === 503 ||
-        /quota|billing|insufficient|limit exceeded|api key/i.test(message);
+        result.status === 429 || /quota|billing|insufficient|limit exceeded|resource_exhausted/i.test(message);
+      const isApiKeyOrAuthIssue =
+        result.status === 401 ||
+        result.status === 403 ||
+        /api key|invalid key|permission|unauthorized|forbidden/i.test(message);
+      const isTemporaryGeminiIssue =
+        result.status === 503 || /service unavailable|overloaded|try again/i.test(message);
       const friendlyError = isQuotaOrBilling
-        ? "Gemini quota exceeded or API key issue. Check your key at https://aistudio.google.com/apikey"
-        : message || "Transcription failed";
+        ? "Gemini quota exceeded. Check quotas at https://aistudio.google.com/apikey"
+        : isApiKeyOrAuthIssue
+          ? "Gemini API key issue. Check your key at https://aistudio.google.com/apikey"
+          : isTemporaryGeminiIssue
+            ? "Gemini is temporarily unavailable. Please try again in a minute."
+            : message || "Transcription failed";
       return NextResponse.json(
         { error: friendlyError },
         { status: result.status === 429 ? 429 : result.status ?? 500 }

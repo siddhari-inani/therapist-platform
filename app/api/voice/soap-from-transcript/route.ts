@@ -47,12 +47,20 @@ export async function POST(request: NextRequest) {
     if (!result.ok) {
       const message = result.error ?? "";
       const isQuotaOrBilling =
-        result.status === 429 ||
-        result.status === 503 ||
-        /quota|billing|insufficient|limit exceeded|api key/i.test(message);
+        result.status === 429 || /quota|billing|insufficient|limit exceeded|resource_exhausted/i.test(message);
+      const isApiKeyOrAuthIssue =
+        result.status === 401 ||
+        result.status === 403 ||
+        /api key|invalid key|permission|unauthorized|forbidden/i.test(message);
+      const isTemporaryGeminiIssue =
+        result.status === 503 || /service unavailable|overloaded|try again/i.test(message);
       const friendlyError = isQuotaOrBilling
-        ? "Gemini quota exceeded or API key issue. Check your key at https://aistudio.google.com/apikey"
-        : message || "AI structuring failed";
+        ? "Gemini quota exceeded. Check quotas at https://aistudio.google.com/apikey"
+        : isApiKeyOrAuthIssue
+          ? "Gemini API key issue. Check your key at https://aistudio.google.com/apikey"
+          : isTemporaryGeminiIssue
+            ? "Gemini is temporarily unavailable. Please try again in a minute."
+            : message || "AI structuring failed";
       return NextResponse.json(
         { error: friendlyError },
         { status: result.status === 429 ? 429 : result.status ?? 500 }
