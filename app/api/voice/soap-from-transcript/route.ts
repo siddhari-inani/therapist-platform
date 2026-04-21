@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateContent } from "@/lib/gemini";
+import {
+  classifyGeminiError,
+  generateContent,
+  getGeminiApiKeySource,
+  isGeminiConfigured,
+} from "@/lib/gemini";
 
 const SOAP_STRUCTURE_SYSTEM = `You are a clinical documentation assistant for physical therapy. Your task is to take a raw transcript of a therapist's voice notes or session summary and structure it into a SOAP note format.
 
@@ -19,6 +24,19 @@ Rules:
 
 export async function POST(request: NextRequest) {
   try {
+    if (!isGeminiConfigured()) {
+      const source = getGeminiApiKeySource();
+      console.error("soap-from-transcript: Gemini key not configured", { source });
+      return NextResponse.json(
+        {
+          error:
+            "Gemini API key is not set for the server runtime. Add GEMINI_API_KEY (or GOOGLE_API_KEY / GOOGLE_GENERATIVE_AI_API_KEY) and restart the dev server.",
+          configSource: source,
+        },
+        { status: 503 }
+      );
+    }
+
     const body = await request.json();
     const { transcript } = body as { transcript?: string };
 
@@ -46,23 +64,22 @@ export async function POST(request: NextRequest) {
 
     if (!result.ok) {
       const message = result.error ?? "";
-      const isQuotaOrBilling =
-        result.status === 429 || /quota|billing|insufficient|limit exceeded|resource_exhausted/i.test(message);
-      const isApiKeyOrAuthIssue =
-        result.status === 401 ||
-        result.status === 403 ||
-        /api key|invalid key|permission|unauthorized|forbidden/i.test(message);
-      const isTemporaryGeminiIssue =
-        result.status === 503 || /service unavailable|overloaded|try again/i.test(message);
-      const friendlyError = isQuotaOrBilling
-        ? "Gemini quota exceeded. Check quotas at https://aistudio.google.com/apikey"
-        : isApiKeyOrAuthIssue
-          ? "Gemini API key issue. Check your key at https://aistudio.google.com/apikey"
-          : isTemporaryGeminiIssue
-            ? "Gemini is temporarily unavailable. Please try again in a minute."
-            : message || "AI structuring failed";
+      const category = classifyGeminiError(result.status, message);
+      const friendlyError =
+        category === "quota_or_billing"
+          ? "Gemini quota exceeded. Check quotas at https://aistudio.google.com/apikey"
+          : category === "api_key_or_auth" || category === "misconfigured"
+            ? "Gemini API key issue. Check your key at https://aistudio.google.com/apikey"
+            : category === "temporary_unavailable"
+              ? "Gemini is temporarily unavailable. Please try again in a minute."
+              : message || "AI structuring failed";
       return NextResponse.json(
-        { error: friendlyError },
+        {
+          error: friendlyError,
+          category,
+          status: result.status ?? 500,
+          ...(process.env.NODE_ENV === "development" ? { rawError: message } : {}),
+        },
         { status: result.status === 429 ? 429 : result.status ?? 500 }
       );
     }
