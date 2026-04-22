@@ -34,6 +34,18 @@ type PatientContext = {
 };
 
 type SummaryVerbosity = "summary" | "detailed";
+type AssistantIntent =
+  | "stats"
+  | "patient_summary"
+  | "milestones"
+  | "soap_summary"
+  | "patients_list"
+  | "appointments"
+  | "navigation"
+  | "charting"
+  | "messages"
+  | "help"
+  | "general";
 
 interface PatientDetail {
   patient: Profile;
@@ -152,8 +164,6 @@ export function AIAssistant() {
   };
 
   const processMessage = async (message: string): Promise<{ text: string; isHTML?: boolean }> => {
-    const lowerMessage = message.toLowerCase();
-
     // Get current user (or use demo therapist identity)
     let effectiveUserId = DEMO_THERAPIST_ID;
     if (!isDemo) {
@@ -174,65 +184,136 @@ export function AIAssistant() {
       };
     }
 
-    // Intent detection (specific intents first)
-    if (
-      matchesIntent(lowerMessage, ["stats", "statistics", "dashboard", "overview"]) &&
-      (lowerMessage.includes("dashboard") || lowerMessage.includes("practice") || lowerMessage.includes("statistic"))
-    ) {
-      return await handleStats();
-    }
-    if (
-      matchesIntent(lowerMessage, [
-        "summarize",
-        "summary",
-        "status",
-        "overview",
-        "details",
-        "full details",
-        "how is",
-        "progress",
-        "how's",
-        "how are they",
-      ])
-    ) {
-      return await handlePatientSummary(message, effectiveUserId);
-    } else if (matchesIntent(lowerMessage, ["milestone", "milestones"])) {
-      return await handleMilestones(message, effectiveUserId);
-    } else if (
-      matchesIntent(lowerMessage, ["soap", "soap note", "soap notes", "notes", "charting"]) &&
-      (lowerMessage.includes("summarize") || lowerMessage.includes("summary") || lowerMessage.includes("for"))
-    ) {
-      return await handleSOAPSummary(message, effectiveUserId);
-    } else if (matchesIntent(lowerMessage, ["patient", "patients", "show patients", "list patients"])) {
-      return await handlePatients(effectiveUserId);
-    } else if (
-      matchesIntent(lowerMessage, [
-        "appointment",
-        "appointments",
-        "schedule",
-        "calendar",
-        "today",
-        "upcoming",
-      ])
-    ) {
-      return await handleAppointments(message);
-    } else if (matchesIntent(lowerMessage, ["navigate", "go to", "open", "show", "take me"])) {
-      return handleNavigation(message);
-    } else if (matchesIntent(lowerMessage, ["soap", "note", "charting", "create note"])) {
-      return handleCharting();
-    } else if (matchesIntent(lowerMessage, ["message", "messages", "chat"])) {
-      return handleMessages();
-    } else if (matchesIntent(lowerMessage, ["help", "what can you", "how do i"])) {
-      return handleHelp();
-    } else if (matchesIntent(lowerMessage, ["stats", "statistics", "dashboard", "overview"])) {
-      return await handleStats();
-    } else {
-      return await handleGeneral(message);
+    const intent = detectIntent(message);
+    switch (intent) {
+      case "stats":
+        return await handleStats();
+      case "patient_summary":
+        return await handlePatientSummary(message, effectiveUserId);
+      case "milestones":
+        return await handleMilestones(message, effectiveUserId);
+      case "soap_summary":
+        return await handleSOAPSummary(message, effectiveUserId);
+      case "patients_list":
+        return await handlePatients(effectiveUserId);
+      case "appointments":
+        return await handleAppointments(message);
+      case "navigation":
+        return handleNavigation(message);
+      case "charting":
+        return handleCharting();
+      case "messages":
+        return handleMessages();
+      case "help":
+        return handleHelp();
+      default:
+        return await handleGeneral(message);
     }
   };
 
-  const matchesIntent = (message: string, keywords: string[]): boolean => {
-    return keywords.some((keyword) => message.includes(keyword));
+  const normalizeForNlp = (value: string): string =>
+    value.toLowerCase().replace(/[^\w\s']/g, " ").replace(/\s+/g, " ").trim();
+
+  const hasAnyPhrase = (message: string, phrases: string[]): boolean =>
+    phrases.some((phrase) => message.includes(phrase));
+
+  const detectIntent = (message: string): AssistantIntent => {
+    const nlp = normalizeForNlp(message);
+
+    if (
+      hasAnyPhrase(nlp, [
+        "what can you do",
+        "what can you help",
+        "how do i",
+        "help me with",
+        "show commands",
+      ]) ||
+      /^(help|commands)\b/.test(nlp)
+    ) {
+      return "help";
+    }
+
+    if (
+      hasAnyPhrase(nlp, [
+        "dashboard stats",
+        "practice stats",
+        "practice overview",
+        "my stats",
+        "statistics",
+      ])
+    ) {
+      return "stats";
+    }
+
+    if (
+      hasAnyPhrase(nlp, [
+        "list patients",
+        "show patients",
+        "my patients",
+        "patient list",
+      ])
+    ) {
+      return "patients_list";
+    }
+
+    if (
+      hasAnyPhrase(nlp, [
+        "soap notes for",
+        "soap note for",
+        "summarize soap",
+        "soap summary",
+        "charting notes",
+      ])
+    ) {
+      return "soap_summary";
+    }
+
+    if (hasAnyPhrase(nlp, ["milestone", "milestones"])) {
+      return "milestones";
+    }
+
+    if (
+      hasAnyPhrase(nlp, [
+        "summarize",
+        "summary",
+        "status of",
+        "how is",
+        "how are",
+        "progress of",
+        "full details",
+        "all details",
+      ]) ||
+      (lastPatientContext !== null && isLikelyContextFollowUp(nlp))
+    ) {
+      return "patient_summary";
+    }
+
+    if (
+      hasAnyPhrase(nlp, [
+        "appointment",
+        "appointments",
+        "calendar",
+        "schedule",
+        "upcoming",
+        "today",
+      ])
+    ) {
+      return "appointments";
+    }
+
+    if (hasAnyPhrase(nlp, ["go to", "navigate", "take me", "open "])) {
+      return "navigation";
+    }
+
+    if (hasAnyPhrase(nlp, ["create soap", "open charting", "charting"])) {
+      return "charting";
+    }
+
+    if (hasAnyPhrase(nlp, ["message", "messages", "inbox chat"])) {
+      return "messages";
+    }
+
+    return "general";
   };
 
   const isLikelyContextFollowUp = (message: string): boolean => {
