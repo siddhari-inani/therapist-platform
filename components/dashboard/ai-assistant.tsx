@@ -7,6 +7,20 @@ import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import type { Profile, Appointment, MedicalRecord, RecoveryMilestone } from "@/types/database.types";
+import { useDemoMode } from "@/contexts/demo-context";
+import {
+  DEMO_APPOINTMENTS,
+  DEMO_EXERCISE_PLAN_ITEMS,
+  DEMO_EXERCISE_PLANS,
+  DEMO_EXERCISE_RECOMMENDATIONS,
+  DEMO_EXERCISE_SESSIONS,
+  DEMO_EXERCISE_TEMPLATES,
+  DEMO_MEDICAL_RECORDS,
+  DEMO_MILESTONES,
+  DEMO_PATIENTS,
+  DEMO_THERAPIST_ID,
+  getDemoDashboardStats,
+} from "@/lib/demo-data";
 
 interface Message {
   sender: "user" | "assistant";
@@ -14,21 +28,78 @@ interface Message {
   isHTML?: boolean;
 }
 
+type PatientContext = {
+  id: string;
+  name: string;
+};
+
+type SummaryVerbosity = "summary" | "detailed";
+
 interface PatientDetail {
   patient: Profile;
   appointments: Appointment[];
   records: MedicalRecord[];
   milestones: RecoveryMilestone[];
+  exercisePlans: ExercisePlanLite[];
+  exerciseItems: ExercisePlanItemLite[];
+  exerciseRecommendations: ExerciseRecommendationLite[];
+  exerciseSessions: ExerciseSessionLite[];
 }
+
+type ExercisePlanLite = {
+  id: string;
+  title: string;
+  description: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  is_active: boolean;
+  created_at: string;
+};
+
+type ExercisePlanItemLite = {
+  id: string;
+  exercise_plan_id: string;
+  sequence_order: number;
+  sets: number | null;
+  reps: number | null;
+  hold_seconds: number | null;
+  frequency_per_week: number | null;
+  days_of_week: string[] | null;
+  notes: string | null;
+  exercise_templates: { name: string } | null;
+};
+
+type ExerciseRecommendationLite = {
+  id: string;
+  exercise_plan_id: string | null;
+  title: string;
+  body: string | null;
+  recommendation_type: string;
+  status: string;
+  created_at: string;
+};
+
+type ExerciseSessionLite = {
+  id: string;
+  exercise_plan_id: string | null;
+  exercise_template_id: string | null;
+  started_at: string;
+  average_pain_score: number | null;
+  average_effort: number | null;
+  total_sets_completed: number | null;
+  total_reps_completed: number | null;
+};
 
 export function AIAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [lastPatientContext, setLastPatientContext] = useState<PatientContext | null>(null);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const supabase = createClient();
+  const { isDemo } = useDemoMode();
 
   useEffect(() => {
     if (isOpen && messages.length === 0) {
@@ -83,12 +154,21 @@ export function AIAssistant() {
   const processMessage = async (message: string): Promise<{ text: string; isHTML?: boolean }> => {
     const lowerMessage = message.toLowerCase();
 
-    // Get current user
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    // Get current user (or use demo therapist identity)
+    let effectiveUserId = DEMO_THERAPIST_ID;
+    if (!isDemo) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        return {
+          text: "Please log in to use the AI assistant.",
+        };
+      }
+      effectiveUserId = user.id;
+    }
 
-    if (!user) {
+    if (!effectiveUserId) {
       return {
         text: "Please log in to use the AI assistant.",
       };
@@ -107,22 +187,24 @@ export function AIAssistant() {
         "summary",
         "status",
         "overview",
+        "details",
+        "full details",
         "how is",
         "progress",
         "how's",
         "how are they",
       ])
     ) {
-      return await handlePatientSummary(message, user.id);
+      return await handlePatientSummary(message, effectiveUserId);
     } else if (matchesIntent(lowerMessage, ["milestone", "milestones"])) {
-      return await handleMilestones(message, user.id);
+      return await handleMilestones(message, effectiveUserId);
     } else if (
       matchesIntent(lowerMessage, ["soap", "soap note", "soap notes", "notes", "charting"]) &&
       (lowerMessage.includes("summarize") || lowerMessage.includes("summary") || lowerMessage.includes("for"))
     ) {
-      return await handleSOAPSummary(message, user.id);
+      return await handleSOAPSummary(message, effectiveUserId);
     } else if (matchesIntent(lowerMessage, ["patient", "patients", "show patients", "list patients"])) {
-      return await handlePatients(user.id);
+      return await handlePatients(effectiveUserId);
     } else if (
       matchesIntent(lowerMessage, [
         "appointment",
@@ -153,12 +235,31 @@ export function AIAssistant() {
     return keywords.some((keyword) => message.includes(keyword));
   };
 
+  const isLikelyContextFollowUp = (message: string): boolean => {
+    const lower = message.toLowerCase();
+    return (
+      /\b(they|them|their|that patient|this patient|same patient|him|her|his)\b/.test(lower) ||
+      /^(and|also|what about|how about|now|next)\b/.test(lower)
+    );
+  };
+
+  const inferSummaryVerbosity = (message: string): SummaryVerbosity => {
+    const lower = message.toLowerCase();
+    const wantsDetailed =
+      /\b(full details?|all details?|everything|deep dive|complete details?|entire history|all info)\b/.test(
+        lower
+      ) ||
+      (lower.includes("details") && !lower.includes("summar"));
+    return wantsDetailed ? "detailed" : "summary";
+  };
+
   /** Extract patient name/query from phrases like "summarize John", "how is Sarah doing?", "milestones for John", "John's summary", "SOAP notes for John" */
   const extractPatientQuery = (message: string): string | null => {
     const m = message.trim();
     const patterns = [
       /([a-zA-Z\s]+?)'s\s+(?:summary|status|overview|progress|milestones?|soap|notes?)/i,
       /(?:summarize|summary|status|overview|progress|milestones?|soap|notes?)\s+(?:of|for)?\s*([^.?!]+)/i,
+      /(?:details?|full details?)\s+(?:of|for)?\s*([^.?!]+)/i,
       /how(?:'s|\s+is)\s+([^.?!]+?)(?:\s+doing)?[.?!]?$/i,
       /(?:patient|pt)\s+([a-zA-Z\s]+?)(?:\s+summary|\s+status|'s)?[.?!]?$/i,
       /(?:soap|notes?|charting).*?(?:for|of|about)\s+([^.?!]+)/i,
@@ -179,6 +280,17 @@ export function AIAssistant() {
   };
 
   const findPatientByQuery = async (query: string): Promise<Profile | null> => {
+    if (isDemo) {
+      const q = query.toLowerCase();
+      const match = DEMO_PATIENTS.find(
+        (p) =>
+          p.full_name?.toLowerCase().includes(q) ||
+          p.email?.toLowerCase().includes(q) ||
+          (p.full_name && q.split(/\s+/).every((part) => p.full_name!.toLowerCase().includes(part)))
+      );
+      return match || null;
+    }
+
     const { data } = await supabase
       .from("profiles")
       .select("*")
@@ -195,10 +307,103 @@ export function AIAssistant() {
     return match || null;
   };
 
+  const findPatientById = async (patientId: string): Promise<Profile | null> => {
+    if (isDemo) {
+      return DEMO_PATIENTS.find((p) => p.id === patientId) || null;
+    }
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", patientId)
+      .eq("role", "patient")
+      .single();
+    if (error || !data) return null;
+    return data as Profile;
+  };
+
+  const resolvePatientFromMessage = async (
+    message: string
+  ): Promise<{ patient: Profile | null; usedContext: boolean; explicitQuery: string | null }> => {
+    const explicitQuery = extractPatientQuery(message);
+    if (explicitQuery) {
+      const patient = await findPatientByQuery(explicitQuery);
+      return { patient, usedContext: false, explicitQuery };
+    }
+
+    if (lastPatientContext && isLikelyContextFollowUp(message)) {
+      const patient = await findPatientById(lastPatientContext.id);
+      if (patient) {
+        return { patient, usedContext: true, explicitQuery: null };
+      }
+    }
+
+    return { patient: null, usedContext: false, explicitQuery: null };
+  };
+
   const fetchPatientDetail = async (
     patientId: string,
     therapistId: string
   ): Promise<PatientDetail | null> => {
+    if (isDemo) {
+      const patientData = DEMO_PATIENTS.find((p) => p.id === patientId) || null;
+      if (!patientData) return null;
+
+      const demoAppointments = DEMO_APPOINTMENTS.filter(
+        (a) => a.patient_id === patientId && a.therapist_id === therapistId
+      ) as Appointment[];
+      const demoRecords = DEMO_MEDICAL_RECORDS.filter(
+        (r) => r.patient_id === patientId && r.therapist_id === therapistId
+      ) as MedicalRecord[];
+      const demoMilestones = DEMO_MILESTONES.filter(
+        (m) => m.patient_id === patientId && m.therapist_id === therapistId
+      ) as RecoveryMilestone[];
+
+      const exercisePlans = DEMO_EXERCISE_PLANS.filter(
+        (p) => p.patient_id === patientId && p.therapist_id === therapistId
+      )
+        .map((p) => ({ ...p }))
+        .sort((a, b) => (a.is_active === b.is_active ? 0 : a.is_active ? -1 : 1)) as ExercisePlanLite[];
+      const planIds = exercisePlans.map((p) => p.id);
+
+      const exerciseItems = DEMO_EXERCISE_PLAN_ITEMS.filter((i) => planIds.includes(i.exercise_plan_id)).map(
+        (item) => ({
+          ...item,
+          exercise_templates: {
+            name:
+              DEMO_EXERCISE_TEMPLATES.find((t) => t.id === item.exercise_template_id)?.name || "Exercise",
+          },
+        })
+      ) as ExercisePlanItemLite[];
+
+      const exerciseRecommendations = DEMO_EXERCISE_RECOMMENDATIONS.filter(
+        (r) => r.patient_id === patientId && r.therapist_id === therapistId
+      )
+        .map((r) => ({ ...r }))
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) as ExerciseRecommendationLite[];
+
+      const itemTemplateIdByItemId = new Map(exerciseItems.map((i) => [i.id, i.exercise_template_id]));
+      const exerciseSessions = DEMO_EXERCISE_SESSIONS.filter(
+        (s) => s.patient_id === patientId && (!!s.exercise_plan_id ? planIds.includes(s.exercise_plan_id) : true)
+      )
+        .map((s) => ({
+          ...s,
+          exercise_template_id:
+            itemTemplateIdByItemId.get(s.exercise_plan_item_id ?? "") ?? null,
+        }))
+        .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime()) as ExerciseSessionLite[];
+
+      return {
+        patient: patientData,
+        appointments: demoAppointments,
+        records: demoRecords,
+        milestones: demoMilestones,
+        exercisePlans,
+        exerciseItems,
+        exerciseRecommendations,
+        exerciseSessions,
+      };
+    }
+
     const { data: patientData, error: patientError } = await supabase
       .from("profiles")
       .select("*")
@@ -231,16 +436,80 @@ export function AIAssistant() {
         .order("created_at", { ascending: true }),
     ]);
 
+    // Exercise tables are not fully typed in generated DB types yet.
+    const sbAny = supabase as any;
+    const { data: planRows } = await sbAny
+      .from("exercise_plans")
+      .select("id, title, description, start_date, end_date, is_active, created_at")
+      .eq("patient_id", patientId)
+      .eq("therapist_id", therapistId)
+      .order("created_at", { ascending: false })
+      .limit(6);
+
+    const exercisePlans = ((planRows || []) as ExercisePlanLite[]).sort((a, b) =>
+      a.is_active === b.is_active ? 0 : a.is_active ? -1 : 1
+    );
+    const planIds = exercisePlans.map((p) => p.id);
+
+    let exerciseItems: ExercisePlanItemLite[] = [];
+    let exerciseRecommendations: ExerciseRecommendationLite[] = [];
+    let exerciseSessions: ExerciseSessionLite[] = [];
+
+    if (planIds.length > 0) {
+      const [itemsRes, recsRes, sessionsRes] = await Promise.all([
+        sbAny
+          .from("exercise_plan_items")
+          .select(
+            "id, exercise_plan_id, sequence_order, sets, reps, hold_seconds, frequency_per_week, days_of_week, notes, exercise_templates(name)"
+          )
+          .in("exercise_plan_id", planIds)
+          .order("sequence_order", { ascending: true }),
+        sbAny
+          .from("exercise_recommendations")
+          .select("id, exercise_plan_id, title, body, recommendation_type, status, created_at")
+          .eq("patient_id", patientId)
+          .in("exercise_plan_id", planIds)
+          .order("created_at", { ascending: false })
+          .limit(20),
+        sbAny
+          .from("exercise_sessions")
+          .select(
+            "id, exercise_plan_id, exercise_template_id, started_at, average_pain_score, average_effort, total_sets_completed, total_reps_completed"
+          )
+          .eq("patient_id", patientId)
+          .in("exercise_plan_id", planIds)
+          .order("started_at", { ascending: false })
+          .limit(20),
+      ]);
+
+      exerciseItems = (itemsRes.data || []) as ExercisePlanItemLite[];
+      exerciseRecommendations = (recsRes.data || []) as ExerciseRecommendationLite[];
+      exerciseSessions = (sessionsRes.data || []) as ExerciseSessionLite[];
+    }
+
     return {
       patient: patientData as Profile,
       appointments: (aptRes.data || []) as Appointment[],
       records: (recRes.data || []) as MedicalRecord[],
       milestones: (milRes.data || []) as RecoveryMilestone[],
+      exercisePlans,
+      exerciseItems,
+      exerciseRecommendations,
+      exerciseSessions,
     };
   };
 
-  const formatPatientSummary = (d: PatientDetail): string => {
-    const { patient, appointments, records, milestones } = d;
+  const formatPatientSummary = (d: PatientDetail, verbosity: SummaryVerbosity = "summary"): string => {
+    const {
+      patient,
+      appointments,
+      records,
+      milestones,
+      exercisePlans,
+      exerciseItems,
+      exerciseRecommendations,
+      exerciseSessions,
+    } = d;
     const name = patient.full_name || patient.email || "Patient";
     const upcoming = appointments.filter((a) => new Date(a.start_time) >= new Date());
     const completed = milestones.filter((m) => m.status === "completed").length;
@@ -250,6 +519,30 @@ export function AIAssistant() {
     const draftNotes = records.filter((r) => r.status === "draft").length;
     const lastApt = appointments[0];
     const lastRecord = records[0];
+    const activePlan = exercisePlans.find((p) => p.is_active) || exercisePlans[0];
+    const itemsForActivePlan = activePlan
+      ? exerciseItems.filter((i) => i.exercise_plan_id === activePlan.id)
+      : [];
+    const sessionsForActivePlan = activePlan
+      ? exerciseSessions.filter((s) => s.exercise_plan_id === activePlan.id)
+      : [];
+    const openExerciseRecs = exerciseRecommendations.filter(
+      (r) => !["resolved", "closed", "done"].includes((r.status || "").toLowerCase())
+    ).length;
+    const avgPain =
+      exerciseSessions.length > 0
+        ? (
+            exerciseSessions.reduce((acc, s) => acc + (s.average_pain_score ?? 0), 0) /
+            exerciseSessions.length
+          ).toFixed(1)
+        : null;
+    const avgEffort =
+      exerciseSessions.length > 0
+        ? (
+            exerciseSessions.reduce((acc, s) => acc + (s.average_effort ?? 0), 0) /
+            exerciseSessions.length
+          ).toFixed(1)
+        : null;
 
     let s = `<strong>${name}</strong>\n\n`;
     s += `• <strong>Status:</strong> ${upcoming.length} upcoming appointment${upcoming.length !== 1 ? "s" : ""}, ${records.length} SOAP note${records.length !== 1 ? "s" : ""}${draftNotes ? ` (${draftNotes} draft)` : ""}\n`;
@@ -275,10 +568,100 @@ export function AIAssistant() {
     if (lastRecord?.assessment) {
       s += `\n<strong>Latest assessment:</strong> ${lastRecord.assessment.substring(0, 150)}${lastRecord.assessment.length > 150 ? "…" : ""}\n`;
     }
+
+    if (verbosity === "summary") {
+      if (lastRecord?.assessment) {
+        s += `• <strong>Latest clinical assessment:</strong> ${lastRecord.assessment.substring(0, 140)}${
+          lastRecord.assessment.length > 140 ? "…" : ""
+        }\n`;
+      }
+      if (lastRecord?.plan) {
+        s += `• <strong>Current plan:</strong> ${lastRecord.plan.substring(0, 140)}${
+          lastRecord.plan.length > 140 ? "…" : ""
+        }\n`;
+      }
+      s += `• <strong>Exercise:</strong> ${
+        activePlan ? `${activePlan.title} (${itemsForActivePlan.length} exercises)` : "No active plan"
+      } • ${exerciseSessions.length} recent sessions • ${openExerciseRecs} open recs\n`;
+      if (sessionsForActivePlan.length > 0) {
+        const latestSession = sessionsForActivePlan[0];
+        s += `• <strong>Latest session:</strong> ${new Date(latestSession.started_at).toLocaleDateString()} • pain ${
+          latestSession.average_pain_score ?? "-"
+        } • effort ${latestSession.average_effort ?? "-"}\n`;
+      }
+      s += `\nAsk "full details for ${name}" if you want complete SOAP + exercise breakdown.`;
+      return s;
+    }
+
+    if (records.length > 0) {
+      s += `\n<strong>Recent SOAP details:</strong>\n`;
+      records.slice(0, 3).forEach((r) => {
+        const date = new Date(r.created_at || r.updated_at || Date.now()).toLocaleDateString();
+        s += `• ${date} (${r.status || "unknown"})\n`;
+        if (r.subjective) s += `  S: ${r.subjective.substring(0, 120)}${r.subjective.length > 120 ? "…" : ""}\n`;
+        if (r.objective) s += `  O: ${r.objective.substring(0, 120)}${r.objective.length > 120 ? "…" : ""}\n`;
+        if (r.assessment) s += `  A: ${r.assessment.substring(0, 120)}${r.assessment.length > 120 ? "…" : ""}\n`;
+        if (r.plan) s += `  P: ${r.plan.substring(0, 120)}${r.plan.length > 120 ? "…" : ""}\n`;
+      });
+    }
+
+    s += `\n<strong>Exercise program:</strong>\n`;
+    s += `• <strong>Plans:</strong> ${exercisePlans.length} total${
+      activePlan ? ` • Active: ${activePlan.title}` : " • No active plan"
+    }\n`;
+    s += `• <strong>Plan items:</strong> ${exerciseItems.length}${
+      activePlan ? ` (${itemsForActivePlan.length} in active plan)` : ""
+    }\n`;
+    s += `• <strong>Exercise sessions:</strong> ${exerciseSessions.length}${
+      avgPain !== null ? ` • Avg pain ${avgPain}` : ""
+    }${avgEffort !== null ? ` • Avg effort ${avgEffort}` : ""}\n`;
+    s += `• <strong>Recommendations:</strong> ${exerciseRecommendations.length} total • ${openExerciseRecs} open\n`;
+
+    if (itemsForActivePlan.length > 0) {
+      s += `\n<strong>Active plan exercises:</strong>\n`;
+      itemsForActivePlan.slice(0, 8).forEach((item) => {
+        const dosage =
+          item.sets && item.reps
+            ? `${item.sets}x${item.reps}`
+            : item.hold_seconds
+            ? `${item.hold_seconds}s hold`
+            : "dosage not set";
+        s += `• #${item.sequence_order} ${item.exercise_templates?.name || "Exercise"} — ${dosage}${
+          item.frequency_per_week ? ` • ${item.frequency_per_week}x/week` : ""
+        }\n`;
+      });
+      if (itemsForActivePlan.length > 8) s += `  … and ${itemsForActivePlan.length - 8} more\n`;
+    }
+
+    if (sessionsForActivePlan.length > 0) {
+      s += `\n<strong>Latest exercise sessions:</strong>\n`;
+      sessionsForActivePlan.slice(0, 5).forEach((session) => {
+        const date = new Date(session.started_at).toLocaleDateString();
+        s += `• ${date} — pain ${session.average_pain_score ?? "-"}, effort ${session.average_effort ?? "-"}, sets ${session.total_sets_completed ?? "-"}, reps ${session.total_reps_completed ?? "-"}\n`;
+      });
+    }
+
+    if (exerciseRecommendations.length > 0) {
+      s += `\n<strong>Recent exercise recommendations:</strong>\n`;
+      exerciseRecommendations.slice(0, 5).forEach((rec) => {
+        s += `• ${rec.title} (${rec.status})${rec.body ? ` — ${rec.body.substring(0, 90)}${rec.body.length > 90 ? "…" : ""}` : ""}\n`;
+      });
+    }
+
     return s;
   };
 
   const handlePatients = async (userId: string) => {
+    if (isDemo) {
+      router.push("/dashboard/patients");
+      const names = DEMO_PATIENTS.slice(0, 15).map((p) => p.full_name || p.email);
+      const more = DEMO_PATIENTS.length > 15 ? ` … and ${DEMO_PATIENTS.length - 15} more` : "";
+      return {
+        text: `You have <strong>${DEMO_PATIENTS.length} patient${DEMO_PATIENTS.length !== 1 ? "s" : ""}</strong>: ${names.join(", ")}${more}. Taking you to the patients page.`,
+        isHTML: true,
+      };
+    }
+
     const { data } = await supabase
       .from("profiles")
       .select("id, full_name, email")
@@ -301,30 +684,38 @@ export function AIAssistant() {
     message: string,
     userId: string
   ): Promise<{ text: string; isHTML?: boolean }> => {
-    const query = extractPatientQuery(message);
-    if (!query) {
+    const verbosity = inferSummaryVerbosity(message);
+    const { patient, usedContext } = await resolvePatientFromMessage(message);
+    if (!patient) {
       const m = message.trim().toLowerCase();
       if (/^(overview|stats|statistics|dashboard)(\s+overview)?$/.test(m)) {
         return await handleStats();
       }
       return {
-        text: "Who would you like a summary for? Try: \"Summarize [patient name]\" or \"How is [patient name] doing?\"",
-      };
-    }
-    const patient = await findPatientByQuery(query);
-    if (!patient) {
-      return {
-        text: `I couldn't find a patient matching "${query}". Try another name or check the patients list.`,
+        text: lastPatientContext
+          ? `Who would you like a summary for? You can say "summarize ${lastPatientContext.name}" or use a follow-up like "how are they doing?"`
+          : "Who would you like a summary for? Try: \"Summarize [patient name]\" or \"How is [patient name] doing?\"",
       };
     }
     const detail = await fetchPatientDetail(patient.id, userId);
     if (!detail) {
       return { text: "I couldn't load this patient's data. Please try again." };
     }
-    const summary = formatPatientSummary(detail);
+    setLastPatientContext({
+      id: patient.id,
+      name: patient.full_name || patient.email || "Patient",
+    });
+    const summary = formatPatientSummary(detail, verbosity);
     router.push(`/dashboard/patients/${patient.id}`);
     return {
-      text: summary + `\n<a href="/dashboard/patients/${patient.id}" class="text-primary underline hover:opacity-80">View full profile →</a>`,
+      text:
+        (usedContext
+          ? `<em>Using previous patient context: ${
+              patient.full_name || patient.email || "Patient"
+            }</em>\n\n`
+          : "") +
+        summary +
+        `\n<a href="/dashboard/patients/${patient.id}" class="text-primary underline hover:opacity-80">View full profile →</a>`,
       isHTML: true,
     };
   };
@@ -333,22 +724,22 @@ export function AIAssistant() {
     message: string,
     userId: string
   ): Promise<{ text: string; isHTML?: boolean }> => {
-    const query = extractPatientQuery(message);
-    if (!query) {
-      return {
-        text: "Which patient's milestones? Try: \"Milestones for [patient name]\" or \"Summarize [patient name]\" for full status.",
-      };
-    }
-    const patient = await findPatientByQuery(query);
+    const { patient, usedContext } = await resolvePatientFromMessage(message);
     if (!patient) {
       return {
-        text: `I couldn't find a patient matching "${query}". Try another name.`,
+        text: lastPatientContext
+          ? `Which patient's milestones? You can say "milestones for ${lastPatientContext.name}" or "show their milestones".`
+          : "Which patient's milestones? Try: \"Milestones for [patient name]\" or \"Summarize [patient name]\" for full status.",
       };
     }
     const detail = await fetchPatientDetail(patient.id, userId);
     if (!detail) {
       return { text: "I couldn't load this patient's data. Please try again." };
     }
+    setLastPatientContext({
+      id: patient.id,
+      name: patient.full_name || patient.email || "Patient",
+    });
     const { milestones } = detail;
     const name = patient.full_name || patient.email;
     if (milestones.length === 0) {
@@ -372,7 +763,14 @@ export function AIAssistant() {
     });
     router.push(`/dashboard/patients/${patient.id}`);
     return {
-      text: s + `\n<a href="/dashboard/patients/${patient.id}" class="text-primary underline hover:opacity-80">View timeline →</a>`,
+      text:
+        (usedContext
+          ? `<em>Using previous patient context: ${
+              patient.full_name || patient.email || "Patient"
+            }</em>\n\n`
+          : "") +
+        s +
+        `\n<a href="/dashboard/patients/${patient.id}" class="text-primary underline hover:opacity-80">View timeline →</a>`,
       isHTML: true,
     };
   };
@@ -433,43 +831,12 @@ export function AIAssistant() {
     message: string,
     userId: string
   ): Promise<{ text: string; isHTML?: boolean }> => {
-    // Extract patient name from message
-    const query = extractPatientQuery(message);
-    if (!query) {
-      // Try to extract from SOAP-specific patterns
-      const soapPatterns = [
-        /(?:soap|notes?|charting).*?(?:for|of|about)\s+([^.?!]+)/i,
-        /(?:summarize|summary).*?(?:soap|notes?).*?(?:for|of|about)?\s*([^.?!]+)/i,
-      ];
-      for (const pattern of soapPatterns) {
-        const match = message.match(pattern);
-        if (match && match[1]) {
-          const q = match[1].trim();
-          if (q.length >= 2) {
-            const patient = await findPatientByQuery(q);
-            if (patient) {
-              const detail = await fetchPatientDetail(patient.id, userId);
-              if (detail) {
-                const summary = formatSOAPSummary(detail.records, patient.full_name || patient.email || "Patient");
-                router.push(`/dashboard/patients/${patient.id}`);
-                return {
-                  text: summary + `\n\n<a href="/dashboard/patients/${patient.id}" class="text-primary underline hover:opacity-80">View all notes →</a>`,
-                  isHTML: true,
-                };
-              }
-            }
-          }
-        }
-      }
-      return {
-        text: "Which patient's SOAP notes? Try: \"Summarize SOAP notes for [patient name]\" or \"SOAP notes for [patient name]\"",
-      };
-    }
-
-    const patient = await findPatientByQuery(query);
+    const { patient, usedContext } = await resolvePatientFromMessage(message);
     if (!patient) {
       return {
-        text: `I couldn't find a patient matching "${query}". Try another name.`,
+        text: lastPatientContext
+          ? `Which patient's SOAP notes? You can say "SOAP notes for ${lastPatientContext.name}" or "show their SOAP notes".`
+          : "Which patient's SOAP notes? Try: \"Summarize SOAP notes for [patient name]\" or \"SOAP notes for [patient name]\"",
       };
     }
 
@@ -478,10 +845,21 @@ export function AIAssistant() {
       return { text: "I couldn't load this patient's data. Please try again." };
     }
 
+    setLastPatientContext({
+      id: patient.id,
+      name: patient.full_name || patient.email || "Patient",
+    });
     const summary = formatSOAPSummary(detail.records, patient.full_name || patient.email || "Patient");
     router.push(`/dashboard/patients/${patient.id}`);
     return {
-      text: summary + `\n\n<a href="/dashboard/patients/${patient.id}" class="text-primary underline hover:opacity-80">View all notes →</a>`,
+      text:
+        (usedContext
+          ? `<em>Using previous patient context: ${
+              patient.full_name || patient.email || "Patient"
+            }</em>\n\n`
+          : "") +
+        summary +
+        `\n\n<a href="/dashboard/patients/${patient.id}" class="text-primary underline hover:opacity-80">View all notes →</a>`,
       isHTML: true,
     };
   };
@@ -548,8 +926,9 @@ export function AIAssistant() {
       text: `I'm Clara, and I can help you with:
 
 • <strong>Patients:</strong> "Show me my patients" or "List patients"
-• <strong>Patient summary:</strong> "Summarize [name]", "How is [name] doing?", "Status of [name]"
+• <strong>Patient summary:</strong> "Summarize [name]", "How is [name] doing?", "Full details for [name]"
 • <strong>SOAP notes:</strong> "SOAP notes for [name]", "Summarize SOAP notes for [name]"
+• <strong>Exercise details:</strong> Included in patient summaries (plans, sessions, recommendations)
 • <strong>Milestones:</strong> "Milestones for [name]" — recovery timeline and progress
 • <strong>Appointments:</strong> "What appointments do I have today?" or "Schedule appointment"
 • <strong>Navigation:</strong> "Go to calendar" or "Take me to patients"
@@ -564,6 +943,19 @@ Just ask me naturally and I'll help!`,
 
   const handleStats = async (): Promise<{ text: string; isHTML?: boolean }> => {
     try {
+      if (isDemo) {
+        const stats = getDemoDashboardStats();
+        return {
+          text: `Here's your practice overview:
+• <strong>Today's Appointments:</strong> ${stats.todayAppointments}
+• <strong>Active Patients:</strong> ${stats.activePatients}
+• <strong>Pending Notes:</strong> ${stats.pendingNotes} draft SOAP notes
+
+Would you like a full summary for a patient? Try "Full details for Surya".`,
+          isHTML: true,
+        };
+      }
+
       const {
         data: { user },
       } = await supabase.auth.getUser();
