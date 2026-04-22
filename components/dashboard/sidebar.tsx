@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import {
   Calendar,
   CreditCard,
-  FileText,
   MessageSquare,
   Settings,
   Users,
@@ -31,7 +30,6 @@ const navItems = [
   { href: "/dashboard/profile", label: "Profile", icon: User },
   { href: "/dashboard/calendar", label: "Calendar", icon: Calendar },
   { href: "/dashboard/patients", label: "Patients", icon: Users },
-  { href: "/dashboard/charting", label: "Charting", icon: FileText },
   { href: "/dashboard/messages", label: "Messages", icon: MessageSquare },
   { href: "/dashboard/payments", label: "Payments", icon: CreditCard },
   { href: "/dashboard/progress", label: "Progress", icon: Trophy },

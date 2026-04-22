@@ -326,7 +326,7 @@ export default function DashboardPage() {
                   Next 5 appointments
                 </CardTitle>
                 <CardDescription className="mt-0.5 text-slate-500 dark:text-slate-400 text-sm">
-                  Click an appointment to open charting or add notes
+                  Click an appointment to view it in the calendar
                 </CardDescription>
               </div>
               <Link href="/dashboard/calendar">
@@ -377,7 +377,7 @@ export default function DashboardPage() {
                     <li key={apt.id}>
                       <div className="group flex items-center gap-4 rounded-xl border border-slate-200/80 dark:border-slate-800/80 p-4 hover:border-primary/30 hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors">
                         <Link
-                          href={`/dashboard/charting?appointment=${apt.id}`}
+                          href="/dashboard/calendar"
                           className="flex min-w-0 flex-1 items-center gap-4"
                         >
                           <div className="flex shrink-0 flex-col items-center rounded-lg bg-slate-100 dark:bg-slate-800/80 px-3 py-2 text-center min-w-[4rem]">
@@ -462,22 +462,6 @@ export default function DashboardPage() {
                   </span>
                   <span className="text-xs text-slate-500 dark:text-slate-400">
                     Browse and manage patient roster
-                  </span>
-                </div>
-              </Link>
-              <Link
-                href="/dashboard/charting"
-                className="flex items-center gap-3 rounded-xl border border-slate-200/80 dark:border-slate-800/80 p-3 hover:border-primary/30 hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors"
-              >
-                <span className="flex shrink-0 items-center justify-center rounded-lg bg-violet-500/10 p-2.5">
-                  <FileText className="h-4 w-4 text-violet-600 dark:text-violet-400" aria-hidden />
-                </span>
-                <div className="min-w-0">
-                  <span className="font-medium text-slate-900 dark:text-slate-100 block text-sm">
-                    Create SOAP note
-                  </span>
-                  <span className="text-xs text-slate-500 dark:text-slate-400">
-                    Start or continue a chart note
                   </span>
                 </div>
               </Link>
