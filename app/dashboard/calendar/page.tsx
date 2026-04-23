@@ -123,17 +123,17 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="h-full p-6 md:p-8 lg:p-10">
-      <div className="mb-6 space-y-2">
+    <div className="h-full p-3 sm:p-6 md:p-8 lg:p-10">
+      <div className="mb-4 sm:mb-6 space-y-1.5 sm:space-y-2">
         <Breadcrumb items={[{ label: "Calendar" }]} />
-        <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
           Calendar
         </h1>
         <p className="text-slate-600 dark:text-slate-400 text-sm md:text-base">
           Manage your appointments and schedule
         </p>
       </div>
-      <div className="h-[calc(100vh-14rem)] min-h-[480px]">
+      <div className="min-h-[480px] md:h-[calc(100vh-14rem)]">
         <DraggableCalendar
           appointments={appointments}
           onAppointmentClick={handleAppointmentClick}

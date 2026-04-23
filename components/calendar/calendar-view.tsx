@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,19 @@ import { AppointmentItem } from "./appointment-item";
 import type { Appointment } from "@/types/database.types";
 
 type ViewMode = "day" | "week" | "month";
+
+function useIsMobile(breakpointPx = 768): boolean {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mql = window.matchMedia(`(max-width: ${breakpointPx - 1}px)`);
+    const update = () => setIsMobile(mql.matches);
+    update();
+    mql.addEventListener("change", update);
+    return () => mql.removeEventListener("change", update);
+  }, [breakpointPx]);
+  return isMobile;
+}
 
 function DayDropZone({
   date,
@@ -46,8 +59,22 @@ export function CalendarView({
   onDateClick,
   onAppointmentDelete,
 }: CalendarViewProps) {
+  const isMobile = useIsMobile();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("week");
+  const [userPickedView, setUserPickedView] = useState(false);
+
+  // On phones default to the Day view (7-col grids are unusable on a 375px wide screen).
+  // We only flip the default once; if the user explicitly picks a view, we respect it.
+  useEffect(() => {
+    if (userPickedView) return;
+    setViewMode(isMobile ? "day" : "week");
+  }, [isMobile, userPickedView]);
+
+  const handlePickView = (next: ViewMode) => {
+    setUserPickedView(true);
+    setViewMode(next);
+  };
 
   const navigateDate = (direction: "prev" | "next") => {
     const newDate = new Date(currentDate);
@@ -137,13 +164,13 @@ export function CalendarView({
   return (
     <div className="flex h-full flex-col">
       <Card className="border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900/80 shadow-sm overflow-hidden rounded-xl">
-        <CardHeader className="pb-4 border-b border-slate-200/80 dark:border-slate-800/80">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+        <CardHeader className="pb-3 sm:pb-4 px-3 sm:px-6 border-b border-slate-200/80 dark:border-slate-800/80">
+          <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-4">
+            <CardTitle className="text-base sm:text-lg font-semibold text-slate-900 dark:text-slate-100 truncate">
               {formatDateHeader()}
             </CardTitle>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={goToToday} className="rounded-lg">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Button variant="outline" size="sm" onClick={goToToday} className="rounded-lg h-8 px-2.5 sm:px-3 text-xs sm:text-sm">
                 Today
               </Button>
               <div className="flex items-center rounded-lg border border-slate-200 dark:border-slate-700 p-0.5">
@@ -172,99 +199,104 @@ export function CalendarView({
             <Button
               variant={viewMode === "day" ? "default" : "ghost"}
               size="sm"
-              className={`rounded-md text-sm ${viewMode === "day" ? "shadow-sm" : "text-slate-600 dark:text-slate-400"}`}
-              onClick={() => setViewMode("day")}
+              className={`rounded-md text-xs sm:text-sm h-8 px-2.5 sm:px-3 ${viewMode === "day" ? "shadow-sm" : "text-slate-600 dark:text-slate-400"}`}
+              onClick={() => handlePickView("day")}
             >
               Day
             </Button>
             <Button
               variant={viewMode === "week" ? "default" : "ghost"}
               size="sm"
-              className={`rounded-md text-sm ${viewMode === "week" ? "shadow-sm" : "text-slate-600 dark:text-slate-400"}`}
-              onClick={() => setViewMode("week")}
+              className={`rounded-md text-xs sm:text-sm h-8 px-2.5 sm:px-3 ${viewMode === "week" ? "shadow-sm" : "text-slate-600 dark:text-slate-400"}`}
+              onClick={() => handlePickView("week")}
             >
               Week
             </Button>
             <Button
               variant={viewMode === "month" ? "default" : "ghost"}
               size="sm"
-              className={`rounded-md text-sm ${viewMode === "month" ? "shadow-sm" : "text-slate-600 dark:text-slate-400"}`}
-              onClick={() => setViewMode("month")}
+              className={`rounded-md text-xs sm:text-sm h-8 px-2.5 sm:px-3 ${viewMode === "month" ? "shadow-sm" : "text-slate-600 dark:text-slate-400"}`}
+              onClick={() => handlePickView("month")}
             >
               Month
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="pt-4">
+        <CardContent className="pt-3 sm:pt-4 px-2 sm:px-6">
           {viewMode === "month" ? (
-            <div className="grid grid-cols-7 gap-px rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-700">
-              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
-                (day) => (
-                  <div
-                    key={day}
-                    className="p-2 text-center text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider bg-slate-50 dark:bg-slate-800/80"
-                  >
-                    {day}
-                  </div>
-                )
-              )}
-              {days.map((date, idx) => {
-                const dayAppointments = getAppointmentsForDate(date);
-                const isToday =
-                  date.toDateString() === new Date().toDateString();
-                return (
-                  <div
-                    key={idx}
-                    className={`min-h-[100px] p-2 bg-white dark:bg-slate-900/80 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${
-                      isToday ? "ring-inset ring-2 ring-primary/40 bg-primary/5 dark:bg-primary/10" : ""
-                    }`}
-                    onClick={() => onDateClick?.(date)}
-                  >
+            <div className="-mx-2 sm:mx-0 overflow-x-auto">
+              <div className="min-w-[640px] sm:min-w-0 px-2 sm:px-0">
+                <div className="grid grid-cols-7 gap-px rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-700">
+                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
                     <div
-                      className={`text-sm font-medium mb-2 ${
-                        isToday
-                          ? "text-primary font-semibold"
-                          : "text-slate-700 dark:text-slate-300"
-                      }`}
+                      key={day}
+                      className="p-2 text-center text-[11px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider bg-slate-50 dark:bg-slate-800/80"
                     >
-                      {date.getDate()}
+                      {day}
                     </div>
-                    <div className="space-y-1.5">
-                      {dayAppointments.slice(0, 3).map((apt) => (
-                        <AppointmentItem
-                          key={apt.id}
-                          appointment={apt}
-                          compact
-                          onClick={(e) => {
-                            e?.stopPropagation();
-                            onAppointmentClick?.(apt);
-                          }}
-                          onDelete={(id) => {
-                            onAppointmentDelete?.(id);
-                          }}
-                        />
-                      ))}
-                      {dayAppointments.length > 3 && (
-                        <div className="text-xs text-slate-500 dark:text-slate-400 pl-1">
-                          +{dayAppointments.length - 3} more
+                  ))}
+                  {days.map((date, idx) => {
+                    const dayAppointments = getAppointmentsForDate(date);
+                    const isToday = date.toDateString() === new Date().toDateString();
+                    return (
+                      <div
+                        key={idx}
+                        className={`min-h-[88px] sm:min-h-[100px] p-1.5 sm:p-2 bg-white dark:bg-slate-900/80 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${
+                          isToday
+                            ? "ring-inset ring-2 ring-primary/40 bg-primary/5 dark:bg-primary/10"
+                            : ""
+                        }`}
+                        onClick={() => onDateClick?.(date)}
+                      >
+                        <div
+                          className={`text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 ${
+                            isToday
+                              ? "text-primary font-semibold"
+                              : "text-slate-700 dark:text-slate-300"
+                          }`}
+                        >
+                          {date.getDate()}
                         </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                        <div className="space-y-1 sm:space-y-1.5">
+                          {dayAppointments.slice(0, 3).map((apt) => (
+                            <AppointmentItem
+                              key={apt.id}
+                              appointment={apt}
+                              compact
+                              onClick={(e) => {
+                                e?.stopPropagation();
+                                onAppointmentClick?.(apt);
+                              }}
+                              onDelete={(id) => {
+                                onAppointmentDelete?.(id);
+                              }}
+                            />
+                          ))}
+                          {dayAppointments.length > 3 && (
+                            <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 pl-1">
+                              +{dayAppointments.length - 3} more
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
-          ) : (
-            <div className="grid grid-cols-7 gap-0 border border-slate-200/80 dark:border-slate-800/80 rounded-lg overflow-hidden">
+          ) : viewMode === "day" ? (
+            // Day view: single wide column, fits phones perfectly
+            <div className="border border-slate-200/80 dark:border-slate-800/80 rounded-lg overflow-hidden">
               {days.map((date, idx) => {
                 const dayAppointments = getAppointmentsForDate(date);
-                const isToday =
-                  date.toDateString() === new Date().toDateString();
+                const isToday = date.toDateString() === new Date().toDateString();
                 return (
                   <div
                     key={idx}
-                    className={`flex flex-col border-r border-slate-200/80 dark:border-slate-800/80 last:border-r-0 ${
-                      isToday ? "bg-primary/5 dark:bg-primary/10" : "bg-slate-50/50 dark:bg-slate-900/30"
+                    className={`flex flex-col ${
+                      isToday
+                        ? "bg-primary/5 dark:bg-primary/10"
+                        : "bg-slate-50/50 dark:bg-slate-900/30"
                     }`}
                   >
                     <div
@@ -277,18 +309,26 @@ export function CalendarView({
                           isToday ? "text-primary" : "text-slate-500 dark:text-slate-400"
                         }`}
                       >
-                        {date.toLocaleDateString("en-US", { weekday: "short" })}
+                        {date.toLocaleDateString("en-US", { weekday: "long" })}
                       </div>
                       <div
-                        className={`text-xl font-bold mt-0.5 ${
+                        className={`text-2xl font-bold mt-0.5 ${
                           isToday ? "text-primary" : "text-slate-900 dark:text-slate-100"
                         }`}
                       >
-                        {date.getDate()}
+                        {date.toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })}
                       </div>
                     </div>
                     <DayDropZone date={date}>
-                      <div className="p-2 space-y-2 flex-1">
+                      <div className="p-3 space-y-2 flex-1 min-h-[280px]">
+                        {dayAppointments.length === 0 ? (
+                          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 py-6 text-center">
+                            No appointments
+                          </p>
+                        ) : null}
                         {dayAppointments.map((apt) => (
                           <AppointmentItem
                             key={apt.id}
@@ -306,13 +346,79 @@ export function CalendarView({
                           onClick={() => onDateClick?.(date)}
                         >
                           <Plus className="h-4 w-4 mr-1.5 shrink-0" />
-                          Add
+                          Add appointment
                         </Button>
                       </div>
                     </DayDropZone>
                   </div>
                 );
               })}
+            </div>
+          ) : (
+            // Week view: horizontally scrollable on small screens, 7 cols on md+
+            <div className="-mx-2 sm:mx-0 overflow-x-auto">
+              <div className="min-w-[840px] sm:min-w-0 px-2 sm:px-0">
+                <div className="grid grid-cols-7 gap-0 border border-slate-200/80 dark:border-slate-800/80 rounded-lg overflow-hidden">
+                  {days.map((date, idx) => {
+                    const dayAppointments = getAppointmentsForDate(date);
+                    const isToday = date.toDateString() === new Date().toDateString();
+                    return (
+                      <div
+                        key={idx}
+                        className={`flex flex-col border-r border-slate-200/80 dark:border-slate-800/80 last:border-r-0 ${
+                          isToday
+                            ? "bg-primary/5 dark:bg-primary/10"
+                            : "bg-slate-50/50 dark:bg-slate-900/30"
+                        }`}
+                      >
+                        <div
+                          className={`p-3 border-b border-slate-200/80 dark:border-slate-800/80 shrink-0 ${
+                            isToday ? "border-primary/20" : ""
+                          }`}
+                        >
+                          <div
+                            className={`text-xs font-medium uppercase tracking-wider ${
+                              isToday ? "text-primary" : "text-slate-500 dark:text-slate-400"
+                            }`}
+                          >
+                            {date.toLocaleDateString("en-US", { weekday: "short" })}
+                          </div>
+                          <div
+                            className={`text-xl font-bold mt-0.5 ${
+                              isToday ? "text-primary" : "text-slate-900 dark:text-slate-100"
+                            }`}
+                          >
+                            {date.getDate()}
+                          </div>
+                        </div>
+                        <DayDropZone date={date}>
+                          <div className="p-2 space-y-2 flex-1">
+                            {dayAppointments.map((apt) => (
+                              <AppointmentItem
+                                key={apt.id}
+                                appointment={apt}
+                                onClick={() => onAppointmentClick?.(apt)}
+                                onDelete={(id) => {
+                                  onAppointmentDelete?.(id);
+                                }}
+                              />
+                            ))}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full mt-2 rounded-lg border-dashed border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:border-primary/50 hover:text-primary hover:bg-primary/5"
+                              onClick={() => onDateClick?.(date)}
+                            >
+                              <Plus className="h-4 w-4 mr-1.5 shrink-0" />
+                              Add
+                            </Button>
+                          </div>
+                        </DayDropZone>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
         </CardContent>
