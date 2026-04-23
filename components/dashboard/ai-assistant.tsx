@@ -1160,19 +1160,32 @@ Would you like to see more details?`,
       {/* Chat Container */}
       {isOpen && (
         <div
-          style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))" }}
-          className="fixed right-3 left-3 sm:left-auto sm:right-6 z-50 w-auto sm:w-96 sm:max-w-[calc(100vw-3rem)] h-[70vh] max-h-[calc(100vh-9rem)] sm:h-[600px] sm:max-h-[calc(100vh-7rem)] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col animate-in slide-in-from-bottom-4"
+          className="fixed z-50 flex flex-col bg-white dark:bg-slate-900 shadow-2xl animate-in slide-in-from-bottom-4 inset-0 sm:inset-auto sm:right-6 sm:[bottom:calc(6rem+env(safe-area-inset-bottom))] sm:w-96 sm:max-w-[calc(100vw-3rem)] sm:h-[600px] sm:max-h-[calc(100vh-7rem)] sm:rounded-2xl sm:border sm:border-slate-200 sm:dark:border-slate-800"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Clara assistant"
         >
           {/* Header */}
-          <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r from-primary to-lime-600 text-white rounded-t-2xl">
-            <div className="flex items-center justify-between">
-              <div>
+          <div
+            className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r from-primary to-lime-600 text-white sm:rounded-t-2xl"
+            style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <Bot className="h-5 w-5" />
+                  <Bot className="h-5 w-5 shrink-0" />
                   Clara
                 </h3>
-                <p className="text-sm text-blue-100 mt-0.5">I can help you navigate and manage your practice</p>
+                <p className="text-xs sm:text-sm text-blue-100 mt-0.5 truncate">I can help you navigate and manage your practice</p>
               </div>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                aria-label="Close Clara"
+                className="-mr-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white/90 hover:bg-white/15 active:bg-white/25 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
           </div>
 
@@ -1189,16 +1202,16 @@ Would you like to see more details?`,
                   </div>
                 )}
                 <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${
+                  className={`max-w-[85%] sm:max-w-[80%] min-w-0 rounded-2xl px-4 py-2.5 ${
                     msg.sender === "user"
                       ? "bg-primary text-white"
                       : "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700"
                   }`}
                 >
                   {msg.isHTML ? (
-                    <div className="text-sm whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: msg.text }} />
+                    <div className="text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere]" dangerouslySetInnerHTML={{ __html: msg.text }} />
                   ) : (
-                    <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                    <p className="text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{msg.text}</p>
                   )}
                 </div>
                 {msg.sender === "user" && (
@@ -1229,8 +1242,11 @@ Would you like to see more details?`,
           </div>
 
           {/* Input */}
-          <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-b-2xl">
-            <div className="flex gap-2">
+          <div
+            className="p-3 sm:p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 sm:rounded-b-2xl"
+            style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+          >
+            <div className="flex gap-2 items-end">
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -1240,11 +1256,21 @@ Would you like to see more details?`,
                     handleSend();
                   }
                 }}
-                placeholder="Ask me anything... (e.g., 'Show me my patients')"
-                className="flex-1"
+                placeholder="Ask Clara a question…"
+                className="flex-1 h-11 text-base sm:h-10 sm:text-sm"
                 disabled={isTyping}
+                inputMode="text"
+                autoComplete="off"
+                autoCorrect="on"
+                enterKeyHint="send"
               />
-              <Button onClick={handleSend} disabled={!input.trim() || isTyping} size="icon">
+              <Button
+                onClick={handleSend}
+                disabled={!input.trim() || isTyping}
+                size="icon"
+                className="h-11 w-11 sm:h-10 sm:w-10 shrink-0"
+                aria-label="Send message"
+              >
                 <Send className="h-4 w-4" />
               </Button>
             </div>
