@@ -1146,7 +1146,8 @@ Would you like to see more details?`,
       {/* Chat Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-primary hover:bg-primary/90 text-white shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
+        style={{ bottom: "calc(1.5rem + env(safe-area-inset-bottom))" }}
+        className="fixed right-4 sm:right-6 z-50 w-14 h-14 rounded-full bg-primary hover:bg-primary/90 text-white shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
         aria-label="Open Clara"
       >
         {isOpen ? (
@@ -1158,7 +1159,10 @@ Would you like to see more details?`,
 
       {/* Chat Container */}
       {isOpen && (
-        <div className="fixed bottom-24 right-6 z-50 w-96 max-w-[calc(100vw-3rem)] h-[600px] max-h-[calc(100vh-7rem)] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col animate-in slide-in-from-bottom-4">
+        <div
+          style={{ bottom: "calc(6rem + env(safe-area-inset-bottom))" }}
+          className="fixed right-3 left-3 sm:left-auto sm:right-6 z-50 w-auto sm:w-96 sm:max-w-[calc(100vw-3rem)] h-[70vh] max-h-[calc(100vh-9rem)] sm:h-[600px] sm:max-h-[calc(100vh-7rem)] bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col animate-in slide-in-from-bottom-4"
+        >
           {/* Header */}
           <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r from-primary to-lime-600 text-white rounded-t-2xl">
             <div className="flex items-center justify-between">

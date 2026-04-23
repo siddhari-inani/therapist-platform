@@ -81,6 +81,18 @@
     @apply w-full max-w-[1600px] mx-auto;
   }
 
+  /* Prevent horizontal overflow on phones caused by wide tables/absolutes */
+  html, body {
+    overflow-x: hidden;
+  }
+
+  /* Respect the iOS safe area on the floating Clara bubble */
+  @supports (padding: env(safe-area-inset-bottom)) {
+    .safe-bottom {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  }
+
   h1, h2, h3, h4, h5, h6 {
     @apply font-semibold tracking-tight;
   }
