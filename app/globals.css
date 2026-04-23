@@ -81,9 +81,18 @@
     @apply w-full max-w-[1600px] mx-auto;
   }
 
-  /* Prevent horizontal overflow on phones caused by wide tables/absolutes */
+  /* Prevent horizontal overflow on phones caused by wide tables/absolutes.
+     Use `overflow-x: clip` instead of `hidden` so we don't establish a scroll
+     container on <html>/<body>, which would otherwise break `position: sticky`
+     on the desktop sidebar. Fall back to `hidden` only for browsers that do
+     not support `clip`. */
   html, body {
     overflow-x: hidden;
+  }
+  @supports (overflow: clip) {
+    html, body {
+      overflow-x: clip;
+    }
   }
 
   /* Respect the iOS safe area on the floating Clara bubble */
