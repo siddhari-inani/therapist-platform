@@ -224,8 +224,8 @@ export function CalendarView({
         </CardHeader>
         <CardContent className="pt-3 sm:pt-4 px-2 sm:px-6">
           {viewMode === "month" ? (
-            <div className="-mx-2 sm:mx-0 overflow-x-auto">
-              <div className="min-w-[640px] sm:min-w-0 px-2 sm:px-0">
+            <div className="-mx-2 overflow-x-auto md:mx-0 md:overflow-visible">
+              <div className="min-w-[640px] px-2 md:min-w-0 md:px-0">
                 <div className="grid grid-cols-7 gap-px rounded-lg overflow-hidden bg-slate-200 dark:bg-slate-700">
                   {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
                     <div
@@ -356,8 +356,8 @@ export function CalendarView({
             </div>
           ) : (
             // Week view: horizontally scrollable on small screens, 7 cols on md+
-            <div className="-mx-2 sm:mx-0 overflow-x-auto">
-              <div className="min-w-[840px] sm:min-w-0 px-2 sm:px-0">
+            <div className="-mx-2 overflow-x-auto md:mx-0 md:overflow-visible">
+              <div className="min-w-[840px] px-2 md:min-w-0 md:px-0">
                 <div className="grid grid-cols-7 gap-0 border border-slate-200/80 dark:border-slate-800/80 rounded-lg overflow-hidden">
                   {days.map((date, idx) => {
                     const dayAppointments = getAppointmentsForDate(date);
