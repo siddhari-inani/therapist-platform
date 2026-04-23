@@ -47,6 +47,17 @@ const config: ExpoConfig = {
   extra: {
     webAppUrl,
   },
+  // Prebuilt React-Core headers can omit RCTDevMenuConfiguration; Expo expects the full RN headers.
+  plugins: [
+    [
+      "expo-build-properties",
+      {
+        ios: {
+          buildReactNativeFromSource: true,
+        },
+      },
+    ],
+  ],
 };
 
 export default config;
