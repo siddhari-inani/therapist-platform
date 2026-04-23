@@ -133,7 +133,7 @@ export default function CalendarPage() {
           Manage your appointments and schedule
         </p>
       </div>
-      <div className="min-h-[480px] md:h-[calc(100vh-14rem)]">
+      <div className="min-h-[480px]">
         <DraggableCalendar
           appointments={appointments}
           onAppointmentClick={handleAppointmentClick}
