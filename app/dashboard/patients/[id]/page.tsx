@@ -1165,8 +1165,8 @@ export default function PatientDetailPage() {
                       </div>
                       {demoExerciseItems.length > 0 ? (
                         <>
-                          <div className="rounded-lg border-l-4 border-primary border border-sky-200/80 dark:border-amber-700 bg-white/85 dark:bg-slate-900/80 px-3 py-2.5 text-xs text-slate-900 dark:text-slate-100 space-y-1.5 shadow-sm">
-                            <p className="font-semibold text-slate-900 dark:text-amber-200">
+                          <div className="rounded-lg border-l-4 border-primary border border-sky-200/80 dark:border-amber-700 bg-white/85 dark:bg-slate-900/80 px-4 py-3.5 text-slate-900 dark:text-slate-100 space-y-1.5 shadow-sm">
+                            <p className="text-lg md:text-xl font-semibold text-slate-900 dark:text-amber-200 leading-snug">
                               Surya showed repeated knee valgus this week during squats.
                             </p>
                           </div>
