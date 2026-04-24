@@ -1135,16 +1135,16 @@ export default function PatientDetailPage() {
         <div className="space-y-6">
           {/* Exercise Insights */}
           <Card className="overflow-hidden border border-sky-200 dark:border-amber-700/70 bg-gradient-to-r from-sky-50 via-white to-indigo-50 dark:from-amber-950/50 dark:to-orange-950/30 shadow-sm ring-1 ring-white/70 dark:ring-0">
-            <CardHeader className="pb-2">
+            <CardHeader className="pb-3">
               <div className="flex items-start gap-3">
-                <div className="mt-0.5 rounded-full bg-sky-100 dark:bg-amber-900/60 p-1.5">
-                  <TriangleAlert className="h-4 w-4 text-sky-700 dark:text-amber-300" />
+                <div className="mt-1 rounded-full bg-sky-100 dark:bg-amber-900/60 p-2">
+                  <TriangleAlert className="h-6 w-6 text-sky-700 dark:text-amber-300" />
                 </div>
                 <div>
-                  <CardTitle className="text-slate-900 dark:text-amber-100 text-base">
+                  <CardTitle className="text-slate-900 dark:text-amber-100 text-2xl md:text-3xl font-bold tracking-tight">
                     Exercise Insight
                   </CardTitle>
-                  <CardDescription className="mt-0.5 text-xs text-slate-600 dark:text-amber-200/80">
+                  <CardDescription className="mt-1 text-sm text-slate-600 dark:text-amber-200/80">
                     Quick clinical signal and suggested plan update.
                   </CardDescription>
                 </div>
@@ -1168,13 +1168,6 @@ export default function PatientDetailPage() {
                           <div className="rounded-lg border-l-4 border-primary border border-sky-200/80 dark:border-amber-700 bg-white/85 dark:bg-slate-900/80 px-3 py-2.5 text-xs text-slate-900 dark:text-slate-100 space-y-1.5 shadow-sm">
                             <p className="font-semibold text-slate-900 dark:text-amber-200">
                               Surya showed repeated knee valgus this week during squats.
-                            </p>
-                            <p className="text-slate-700 dark:text-slate-300">
-                              Clinical pattern is consistent with <span className="font-medium">hip abductor weakness</span> (positive
-                              Trendelenburg).
-                            </p>
-                            <p className="text-slate-700 dark:text-slate-300">
-                              Suggested: add <span className="font-medium">side-lying clamshells</span> (2-3 sets, 12-15 reps, 3-4x/week).
                             </p>
                           </div>
                           <div className="mt-2 flex flex-wrap items-center gap-2">
