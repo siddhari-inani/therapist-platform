@@ -14,9 +14,11 @@ import { CalendarView } from "./calendar-view";
 import type { Appointment } from "@/types/database.types";
 import { createClient } from "@/lib/supabase/client";
 
+type AppointmentWithPatient = Appointment & { patient_name?: string | null };
+
 interface DraggableCalendarProps {
-  appointments: Appointment[];
-  onAppointmentClick?: (appointment: Appointment) => void;
+  appointments: AppointmentWithPatient[];
+  onAppointmentClick?: (appointment: AppointmentWithPatient) => void;
   onDateClick?: (date: Date) => void;
   onAppointmentMove?: (appointmentId: string, newStartTime: Date) => void;
   onAppointmentDelete?: (appointmentId: string) => void;

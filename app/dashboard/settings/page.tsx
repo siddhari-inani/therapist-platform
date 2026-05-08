@@ -3,7 +3,7 @@
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Settings, User, Bell, Shield, CreditCard, Globe } from "lucide-react";
+import { Settings, User, Bell, Shield, CreditCard, Globe, UserPlus } from "lucide-react";
 import Link from "next/link";
 
 export default function SettingsPage() {
@@ -41,6 +41,13 @@ export default function SettingsPage() {
       description: "Language, timezone, and display settings",
       icon: Globe,
       href: "/dashboard/preferences",
+      comingSoon: false,
+    },
+    {
+      title: "Therapist Invites",
+      description: "Invite PTs and track onboarding status",
+      icon: UserPlus,
+      href: "/dashboard/settings/invites",
       comingSoon: false,
     },
   ];

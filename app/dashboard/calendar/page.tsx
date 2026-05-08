@@ -1,24 +1,36 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { DraggableCalendar } from "@/components/calendar/draggable-calendar";
 import { AppointmentForm } from "@/components/appointments/appointment-form";
 import { createClient } from "@/lib/supabase/client";
-import { useGamification } from "@/contexts/gamification-context";
 import { useDemoMode } from "@/contexts/demo-context";
-import { DEMO_APPOINTMENTS } from "@/lib/demo-data";
+import { DEMO_APPOINTMENTS, DEMO_PATIENTS } from "@/lib/demo-data";
 import { toast } from "sonner";
 import type { Appointment } from "@/types/database.types";
 
+type AppointmentWithPatient = Appointment & { patient_name?: string | null };
+
+function normalizeCalendarAppointment(
+  appointment: Appointment,
+  patientName: string | null
+): AppointmentWithPatient {
+  return {
+    ...appointment,
+    treatment_type: appointment.treatment_type || "other",
+    patient_name: patientName,
+  };
+}
+
 export default function CalendarPage() {
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [appointments, setAppointments] = useState<AppointmentWithPatient[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
+  const router = useRouter();
   const supabase = createClient();
-  const { award } = useGamification();
   const { isDemo } = useDemoMode();
 
   useEffect(() => {
@@ -26,8 +38,7 @@ export default function CalendarPage() {
   }, [supabase, isDemo]);
 
   const handleAppointmentClick = (appointment: Appointment) => {
-    // Navigate to charting page for this appointment
-    window.location.href = `/dashboard/charting?appointment=${appointment.id}`;
+    router.push(`/dashboard/charting?appointment=${appointment.id}`);
   };
 
   const handleAppointmentDelete = async (appointmentId: string) => {
@@ -75,14 +86,23 @@ export default function CalendarPage() {
   };
 
   const handleFormSuccess = () => {
-    award?.("appointment_created");
     fetchAppointments();
   };
 
   const fetchAppointments = async () => {
     try {
       if (isDemo) {
-        setAppointments([...DEMO_APPOINTMENTS]);
+        const patientNames = Object.fromEntries(
+          DEMO_PATIENTS.map((patient) => [patient.id, patient.full_name ?? patient.email])
+        );
+        setAppointments(
+          DEMO_APPOINTMENTS.map((appointment) =>
+            normalizeCalendarAppointment(
+              appointment as Appointment,
+              patientNames[appointment.patient_id] ?? null
+            )
+          )
+        );
         setLoading(false);
         return;
       }
@@ -105,7 +125,32 @@ export default function CalendarPage() {
       if (error) {
         console.error("Error fetching appointments:", error);
       } else {
-        setAppointments(data || []);
+        const rows = (data || []) as Appointment[];
+        const patientIds = Array.from(new Set(rows.map((appointment) => appointment.patient_id)));
+        let patientNames: Record<string, string | null> = {};
+
+        if (patientIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("id, full_name, email")
+            .in("id", patientIds);
+
+          patientNames = Object.fromEntries(
+            (profiles ?? []).map((profile: { id: string; full_name: string | null; email: string }) => [
+              profile.id,
+              profile.full_name || profile.email || null,
+            ])
+          );
+        }
+
+        setAppointments(
+          rows.map((appointment) =>
+            normalizeCalendarAppointment(
+              appointment,
+              patientNames[appointment.patient_id] ?? null
+            )
+          )
+        );
       }
     } catch (error) {
       console.error("Error:", error);

@@ -41,14 +41,20 @@ import type {
   RecoveryMilestone,
 } from "@/types/database.types";
 import { RecoveryTimeline } from "@/components/patients/recovery-timeline";
+import { ExerciseLibrary, type ExerciseLibraryTemplate } from "@/components/exercise/exercise-library";
 
-type ExerciseTemplate = {
+type ExerciseTemplate = ExerciseLibraryTemplate & {
   id: string;
   name: string;
   description: string | null;
   created_by: string | null;
   video_url: string | null;
   image_url?: string | null;
+  body_region?: string | null;
+  recovery_phase?: string | null;
+  goal?: string | null;
+  equipment?: string | null;
+  difficulty?: string | null;
 };
 
 type ExercisePlan = {
@@ -218,6 +224,12 @@ export default function PatientDetailPage() {
           created_by: DEMO_THERAPIST_ID,
           video_url: null,
           image_url: t.image_url ?? null,
+          body_region:
+            t.name === "Bodyweight Squat" ? "Knee" : t.name === "Single-Leg Bridge" ? "Hip" : "Core",
+          recovery_phase: t.name === "Bodyweight Squat" ? "Strength" : "Motor control",
+          goal: t.name === "Side Plank" ? "Core stability" : "Strength",
+          equipment: "Bodyweight",
+          difficulty: t.name === "Side Plank" ? "Intermediate" : "Beginner",
         }));
         const plannerPlans: ExercisePlan[] = DEMO_EXERCISE_PLANS.filter(
           (p) => p.patient_id === patientId
@@ -475,7 +487,7 @@ export default function PatientDetailPage() {
 
       const { data: templates } = await supabase
         .from("exercise_templates")
-        .select("id, name, description, created_by, video_url")
+        .select("id, name, description, created_by, video_url, body_region, recovery_phase, goal, equipment, difficulty")
         .order("name", { ascending: true });
       const templateRows = (templates as ExerciseTemplate[]) || [];
       setExerciseTemplates(templateRows);
@@ -882,7 +894,7 @@ export default function PatientDetailPage() {
     }
   };
 
-  const handleQueueTemplateVideo = async (template: ExerciseTemplate) => {
+  const handleQueueTemplateVideo = async (template: ExerciseLibraryTemplate) => {
     setQueueingVideoForTemplateId(template.id);
     if (isDemo) {
       try {
@@ -1746,12 +1758,29 @@ export default function PatientDetailPage() {
                     </div>
                   )}
 
+                  <ExerciseLibrary
+                    templates={exerciseTemplates}
+                    selectedTemplateId={newItemTemplateId}
+                    onSelectTemplate={setNewItemTemplateId}
+                    onQueueVideo={handleQueueTemplateVideo}
+                    queueingVideoForTemplateId={queueingVideoForTemplateId}
+                    getVideoStatus={(templateId) => {
+                      const template = exerciseTemplates.find((item) => item.id === templateId);
+                      const job = templateVideoJobs[templateId];
+                      return job?.status ?? (job?.video_url || template?.video_url ? "ready" : "not generated");
+                    }}
+                    getVideoUrl={(template) => templateVideoJobs[template.id]?.video_url ?? template.video_url}
+                  />
+
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <div className="rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50 to-white p-4 space-y-3 shadow-sm dark:border-slate-800 dark:from-slate-900/70 dark:to-slate-950/60">
-                      <div className="text-sm font-semibold">Create Exercise Template</div>
+                      <div className="text-sm font-semibold">Add Custom Exercise</div>
+                      <p className="text-xs text-muted-foreground">
+                        Use this when the curated library does not cover the patient&apos;s recovery plan.
+                      </p>
                       <input
                         className="w-full rounded-md border bg-background px-3 py-2 text-sm"
-                        placeholder="Template name (e.g. Clamshell)"
+                        placeholder="Exercise name (e.g. Clamshell)"
                         value={newTemplateName}
                         onChange={(e) => setNewTemplateName(e.target.value)}
                       />
@@ -1762,61 +1791,8 @@ export default function PatientDetailPage() {
                         onChange={(e) => setNewTemplateDescription(e.target.value)}
                       />
                       <Button size="sm" onClick={handleCreateTemplate} disabled={!newTemplateName.trim()}>
-                        Save template
+                        Save custom exercise
                       </Button>
-                      <div className="pt-2 space-y-2">
-                        <div className="text-xs uppercase tracking-wide text-muted-foreground">
-                          Existing templates
-                        </div>
-                        {exerciseTemplates.length === 0 && (
-                          <div className="text-sm text-muted-foreground">
-                            No templates yet.
-                          </div>
-                        )}
-                        {exerciseTemplates.map((template) => {
-                          const job = templateVideoJobs[template.id];
-                          const resolvedVideoUrl = job?.video_url ?? template.video_url;
-                          return (
-                            <div
-                              key={template.id}
-                              className="rounded-md border bg-background p-2 flex items-center justify-between gap-3"
-                            >
-                              <div className="flex items-center gap-2 min-w-0">
-                                <div className="min-w-0">
-                                  <div className="text-sm font-medium truncate">{template.name}</div>
-                                  <div className="text-xs text-muted-foreground capitalize">
-                                    Video status: {job?.status ?? (resolvedVideoUrl ? "ready" : "not generated")}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {resolvedVideoUrl && (
-                                  <a
-                                    href={resolvedVideoUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="text-xs underline text-muted-foreground hover:text-foreground"
-                                  >
-                                    View video
-                                  </a>
-                                )}
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleQueueTemplateVideo(template)}
-                                  disabled={queueingVideoForTemplateId === template.id}
-                                >
-                                  {queueingVideoForTemplateId === template.id
-                                    ? "Queueing..."
-                                    : resolvedVideoUrl
-                                    ? "Regenerate AI video"
-                                    : "Generate AI video"}
-                                </Button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
                     </div>
 
                     <div className="rounded-xl border border-slate-200/80 bg-gradient-to-br from-slate-50 to-white p-4 space-y-3 shadow-sm dark:border-slate-800 dark:from-slate-900/70 dark:to-slate-950/60">

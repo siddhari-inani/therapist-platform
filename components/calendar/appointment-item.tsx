@@ -16,6 +16,10 @@ import {
 import { Button } from "@/components/ui/button";
 import type { Appointment, TreatmentType } from "@/types/database.types";
 
+type AppointmentWithPatient = Appointment & { patient_name?: string | null };
+
+const DEFAULT_TREATMENT_TYPE: TreatmentType = "other";
+
 const treatmentColors: Record<TreatmentType, string> = {
   initial_evaluation:
     "bg-primary/10 border-primary/20 text-slate-900 dark:text-slate-100 hover:bg-primary/15",
@@ -31,8 +35,28 @@ const treatmentColors: Record<TreatmentType, string> = {
     "bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800",
 };
 
+function getTreatmentType(appointment: AppointmentWithPatient): TreatmentType {
+  return appointment.treatment_type || DEFAULT_TREATMENT_TYPE;
+}
+
+function formatTreatmentType(value: string | null | undefined): string {
+  return (value || "visit").replace(/_/g, " ");
+}
+
+function formatAppointmentTime(value: string | null | undefined): string {
+  if (!value) return "Time TBD";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Time TBD";
+
+  return date.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 interface AppointmentItemProps {
-  appointment: Appointment;
+  appointment: AppointmentWithPatient;
   onClick?: (e?: React.MouseEvent) => void;
   onDelete?: (appointmentId: string) => void;
   compact?: boolean;
@@ -75,6 +99,12 @@ export function AppointmentItem({
     setShowDeleteDialog(false);
   };
 
+  const treatmentType = getTreatmentType(appointment);
+  const treatmentLabel = formatTreatmentType(treatmentType);
+  const appointmentColor = treatmentColors[treatmentType] || treatmentColors.other;
+  const patientLabel = appointment.patient_name || appointment.title || "Patient";
+  const detailLabel = appointment.title && appointment.patient_name ? appointment.title : treatmentLabel;
+
   if (compact) {
     return (
       <>
@@ -84,18 +114,17 @@ export function AppointmentItem({
           {...listeners}
           {...attributes}
           className={`text-xs px-2 py-1.5 rounded-lg border cursor-grab active:cursor-grabbing truncate relative group transition-colors ${
-            treatmentColors[appointment.treatment_type]
+            appointmentColor
           } ${isDragging ? "opacity-60 shadow-lg" : "shadow-sm"}`}
           onClick={onClick}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          title={appointment.title || "Appointment"}
+          title={`${patientLabel} · ${detailLabel}`}
         >
-          {new Date(appointment.start_time).toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-          })}{" "}
-          {appointment.title || "Appointment"}
+          <span className="font-semibold">
+            {formatAppointmentTime(appointment.start_time)}
+          </span>{" "}
+          {patientLabel}
           {onDelete && isHovered && (
             <button
               onClick={handleDeleteClick}
@@ -137,7 +166,7 @@ export function AppointmentItem({
         {...listeners}
         {...attributes}
         className={`p-3 rounded-xl border cursor-grab active:cursor-grabbing relative group transition-all ${
-          treatmentColors[appointment.treatment_type]
+          appointmentColor
         } ${isDragging ? "opacity-60 shadow-lg" : "shadow-sm hover:shadow"}`}
         onClick={onClick}
         onMouseEnter={() => setIsHovered(true)}
@@ -153,18 +182,15 @@ export function AppointmentItem({
           </button>
         )}
         <div className="text-xs font-medium text-slate-600 dark:text-slate-400 tabular-nums">
-          {new Date(appointment.start_time).toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-          })}
+          {formatAppointmentTime(appointment.start_time)}
           {" – "}
-          {new Date(appointment.end_time).toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-          })}
+          {formatAppointmentTime(appointment.end_time)}
         </div>
         <div className="text-sm font-semibold mt-1 text-slate-900 dark:text-slate-100">
-          {appointment.title || "Appointment"}
+          {patientLabel}
+        </div>
+        <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 capitalize truncate">
+          {detailLabel}
         </div>
         {appointment.notes && (
           <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">

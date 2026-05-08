@@ -8,7 +8,6 @@ import { Breadcrumb } from "@/components/ui/breadcrumb";
 import { SOAPEditor, type SOAPEditorApplySoapRef } from "@/components/charting/soap-editor";
 import { VoiceNoteAssistant, type ApplySoapResult } from "@/components/charting/voice-note-assistant";
 import { createClient } from "@/lib/supabase/client";
-import { useGamification } from "@/contexts/gamification-context";
 import { useDemoMode } from "@/contexts/demo-context";
 import {
   DEMO_APPOINTMENTS,
@@ -32,7 +31,6 @@ function ChartingPageContent() {
   const [loading, setLoading] = useState(true);
   const soapEditorRef = useRef<SOAPEditorApplySoapRef | null>(null);
   const supabase = createClient();
-  const { award } = useGamification();
   const { isDemo } = useDemoMode();
 
   useEffect(() => {
@@ -373,7 +371,6 @@ function ChartingPageContent() {
           const created = newRecord as MedicalRecord;
           setRecord(created);
           window.history.replaceState({}, "", `/dashboard/charting?record=${created.id}`);
-          award?.("soap_finalized");
         }
         return;
       }
@@ -411,7 +408,6 @@ function ChartingPageContent() {
           const created = newRecord as MedicalRecord;
           setRecord(created);
           window.history.replaceState({}, "", `/dashboard/charting?record=${created.id}`);
-          award?.("soap_finalized");
         }
         return;
       }
@@ -452,7 +448,6 @@ function ChartingPageContent() {
 
       if (updatedRecord) {
         setRecord(updatedRecord as MedicalRecord);
-        award?.("soap_finalized");
       }
     } catch (error: any) {
       console.error("Error finalizing note:", error);

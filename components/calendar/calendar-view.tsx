@@ -9,6 +9,7 @@ import { AppointmentItem } from "./appointment-item";
 import type { Appointment } from "@/types/database.types";
 
 type ViewMode = "day" | "week" | "month";
+type AppointmentWithPatient = Appointment & { patient_name?: string | null };
 
 function useIsMobile(breakpointPx = 768): boolean {
   const [isMobile, setIsMobile] = useState(false);
@@ -47,8 +48,8 @@ function DayDropZone({
 }
 
 interface CalendarViewProps {
-  appointments: Appointment[];
-  onAppointmentClick?: (appointment: Appointment) => void;
+  appointments: AppointmentWithPatient[];
+  onAppointmentClick?: (appointment: AppointmentWithPatient) => void;
   onDateClick?: (date: Date) => void;
   onAppointmentDelete?: (appointmentId: string) => void;
 }
@@ -117,7 +118,7 @@ export function CalendarView({
     }
   };
 
-  const getAppointmentsForDate = (date: Date): Appointment[] => {
+  const getAppointmentsForDate = (date: Date): AppointmentWithPatient[] => {
     return appointments.filter((apt) => {
       const aptDate = new Date(apt.start_time);
       return (

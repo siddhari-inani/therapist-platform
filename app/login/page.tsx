@@ -187,24 +187,10 @@ export default function LoginPage() {
               </Button>
             </form>
             
-            <div className="pt-4 border-t border-white/40 dark:border-white/10">
-              <div className="text-sm text-muted-foreground space-y-3">
-                <p className="font-semibold text-slate-900 dark:text-slate-100 mb-3">Need test credentials?</p>
-                <div className="text-xs space-y-2 bg-white/50 dark:bg-slate-800/50 p-4 rounded-xl border border-white/40 dark:border-white/10 backdrop-blur-sm">
-                  <p><strong className="text-slate-900 dark:text-slate-100">Step 1:</strong> Go to Supabase Dashboard → Authentication → Users</p>
-                  <p><strong className="text-slate-900 dark:text-slate-100">Step 2:</strong> Click &quot;Add user&quot; → &quot;Create new user&quot;</p>
-                  <p><strong className="text-slate-900 dark:text-slate-100">Step 3:</strong> Enter:</p>
-                  <ul className="list-disc list-inside ml-2 space-y-1 text-slate-600 dark:text-slate-400">
-                    <li>Email: <code className="bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded text-slate-900 dark:text-slate-100">therapist@example.com</code></li>
-                    <li>Password: <code className="bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded text-slate-900 dark:text-slate-100">Therapist123!</code></li>
-                    <li>Auto Confirm: ✅</li>
-                    <li>User Metadata: <code className="bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded text-slate-900 dark:text-slate-100 text-[10px]">{"{role: 'therapist', full_name: 'Dr. Jane Smith'}"}</code></li>
-                  </ul>
-                </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 pt-2">
-                  <strong>Note:</strong> Make sure your <code className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">.env.local</code> file has your Supabase credentials.
-                </p>
-              </div>
+            <div className="pt-4 border-t border-white/40 dark:border-white/10 text-center">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Therapist accounts are created by invitation from a clinic administrator.
+              </p>
             </div>
           </CardContent>
         </Card>

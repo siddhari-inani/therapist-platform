@@ -12,7 +12,6 @@ import {
   LayoutDashboard,
   LogOut,
   User,
-  Trophy,
   FlaskConical,
   Menu,
   X,
@@ -21,7 +20,6 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { XpBar } from "@/components/gamification/xp-bar";
 import { createClient } from "@/lib/supabase/client";
 import { useDemoMode } from "@/contexts/demo-context";
 import { DEMO_THERAPIST } from "@/lib/demo-data";
@@ -34,7 +32,6 @@ const navItems = [
   { href: "/dashboard/patients", label: "Patients", icon: Users },
   { href: "/dashboard/messages", label: "Messages", icon: MessageSquare },
   { href: "/dashboard/payments", label: "Payments", icon: CreditCard },
-  { href: "/dashboard/progress", label: "Progress", icon: Trophy },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
@@ -110,10 +107,6 @@ function SidebarInner({
           <FlaskConical className="h-4 w-4 shrink-0" aria-hidden />
           <span className="truncate">{isDemo ? "Demo mode ON" : "Try demo"}</span>
         </button>
-      </div>
-
-      <div className="border-t border-white/40 dark:border-white/10 px-3 py-2">
-        <XpBar compact className="px-1" />
       </div>
 
       <div className="border-t border-white/40 dark:border-white/10 p-3 space-y-2">

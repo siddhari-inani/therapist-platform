@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useGamification } from "@/contexts/gamification-context";
 import {
   Dialog,
   DialogContent,
@@ -64,7 +63,6 @@ export function AddMilestoneModal({
   });
 
   const supabase = createClient();
-  const { award } = useGamification();
   const isEditMode = !!milestone;
 
   // Populate form when editing
@@ -197,7 +195,6 @@ export function AddMilestoneModal({
 
       // If this was a completed discharge milestone, trigger recovery achievement check
       if (formData.category === "discharge" && formData.status === "completed") {
-        award?.("milestone_completed");
       }
 
       // Reset form only if not editing

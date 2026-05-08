@@ -66,6 +66,7 @@ export const DEMO_THERAPIST: Profile = {
   longitude: -122.3972,
   stripe_account_id: null,
   stripe_customer_id: null,
+  onboarding_completed_at: iso(now),
 };
 
 export const DEMO_REVIEWS: Review[] = [
@@ -128,6 +129,7 @@ export const DEMO_PATIENTS: Profile[] = [
     longitude: null,
     stripe_account_id: null,
     stripe_customer_id: "cus_demo_1",
+    onboarding_completed_at: null,
   },
   {
     id: DEMO_PATIENT_IDS[1],
@@ -158,6 +160,7 @@ export const DEMO_PATIENTS: Profile[] = [
     longitude: null,
     stripe_account_id: null,
     stripe_customer_id: null,
+    onboarding_completed_at: null,
   },
   {
     id: DEMO_PATIENT_IDS[2],
@@ -188,6 +191,7 @@ export const DEMO_PATIENTS: Profile[] = [
     longitude: null,
     stripe_account_id: null,
     stripe_customer_id: null,
+    onboarding_completed_at: null,
   },
   {
     id: DEMO_PATIENT_IDS[3],
@@ -218,6 +222,7 @@ export const DEMO_PATIENTS: Profile[] = [
     longitude: null,
     stripe_account_id: null,
     stripe_customer_id: null,
+    onboarding_completed_at: null,
   },
   {
     id: DEMO_PATIENT_IDS[4],
@@ -248,6 +253,7 @@ export const DEMO_PATIENTS: Profile[] = [
     longitude: null,
     stripe_account_id: null,
     stripe_customer_id: null,
+    onboarding_completed_at: null,
   },
   {
     id: DEMO_PATIENT_IDS[5],
@@ -278,6 +284,7 @@ export const DEMO_PATIENTS: Profile[] = [
     longitude: null,
     stripe_account_id: null,
     stripe_customer_id: "cus_demo_surya",
+    onboarding_completed_at: null,
   },
 ];
 

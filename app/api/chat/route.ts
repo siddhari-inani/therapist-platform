@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateContent, isGeminiConfigured } from "@/lib/gemini";
+import { createClient } from "@/lib/supabase/server";
+
+const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX_REQUESTS = 12;
 
 // Physical Therapy AI System Prompt
 const PHYSICAL_THERAPY_SYSTEM_PROMPT = `You are Clara, an expert AI assistant specialized in physical therapy. You have extensive knowledge of:
@@ -45,6 +50,28 @@ Answer questions about physical therapy comprehensively, but always remind users
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const now = Date.now();
+    const bucket = rateLimitStore.get(user.id);
+    if (!bucket || bucket.resetAt < now) {
+      rateLimitStore.set(user.id, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    } else if (bucket.count >= RATE_LIMIT_MAX_REQUESTS) {
+      return NextResponse.json(
+        { error: "Too many chat requests. Try again in a minute." },
+        { status: 429 }
+      );
+    } else {
+      bucket.count += 1;
+    }
+
     const { messages } = await request.json();
 
     if (!messages || !Array.isArray(messages)) {

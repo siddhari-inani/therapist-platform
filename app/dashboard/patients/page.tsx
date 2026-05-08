@@ -11,7 +11,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { PatientForm } from "@/components/patients/patient-form";
 import { createClient } from "@/lib/supabase/client";
-import { useGamification } from "@/contexts/gamification-context";
 import { useDemoMode } from "@/contexts/demo-context";
 import { DEMO_PATIENTS, DEMO_APPOINTMENTS } from "@/lib/demo-data";
 import type { Profile, Appointment, MedicalRecord } from "@/types/database.types";
@@ -27,7 +26,6 @@ export default function PatientsPage() {
     newThisMonth: 0,
   });
   const supabase = createClient();
-  const { award } = useGamification();
   const { isDemo } = useDemoMode();
 
   useEffect(() => {
@@ -175,7 +173,6 @@ export default function PatientsPage() {
         open={isPatientFormOpen}
         onOpenChange={setIsPatientFormOpen}
         onSuccess={() => {
-          award?.("patient_added");
           fetchPatients();
           toast.success("Patient added successfully");
         }}

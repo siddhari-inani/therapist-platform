@@ -83,6 +83,7 @@ export interface Database {
           longitude: number | null;
           stripe_account_id: string | null;
           stripe_customer_id: string | null;
+          onboarding_completed_at: string | null;
         };
         Insert: {
           id: string;
@@ -113,6 +114,7 @@ export interface Database {
           longitude?: number | null;
           stripe_account_id?: string | null;
           stripe_customer_id?: string | null;
+          onboarding_completed_at?: string | null;
         };
         Update: {
           id?: string;
@@ -143,7 +145,9 @@ export interface Database {
           longitude?: number | null;
           stripe_account_id?: string | null;
           stripe_customer_id?: string | null;
+          onboarding_completed_at?: string | null;
         };
+        Relationships: [];
       };
       appointments: {
         Row: {
@@ -203,6 +207,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       payments: {
         Row: {
@@ -253,6 +258,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       medical_records: {
         Row: {
@@ -312,6 +318,7 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
       };
       messages: {
         Row: {
@@ -344,6 +351,7 @@ export interface Database {
           read_at?: string | null;
           created_at?: string;
         };
+        Relationships: [];
       };
       recovery_milestones: {
         Row: {
@@ -388,6 +396,340 @@ export interface Database {
           created_at?: string;
           updated_at?: string;
         };
+        Relationships: [];
+      };
+      patient_therapists: {
+        Row: {
+          id: string;
+          patient_id: string;
+          therapist_id: string;
+          relationship_status: "active" | "inactive";
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          patient_id: string;
+          therapist_id: string;
+          relationship_status?: "active" | "inactive";
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          patient_id?: string;
+          therapist_id?: string;
+          relationship_status?: "active" | "inactive";
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      therapist_invites: {
+        Row: {
+          id: string;
+          email: string;
+          role: "therapist" | "admin";
+          token: string;
+          status: "pending" | "accepted" | "expired" | "revoked";
+          invited_by: string | null;
+          accepted_by: string | null;
+          expires_at: string;
+          accepted_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          email: string;
+          role?: "therapist" | "admin";
+          token: string;
+          status?: "pending" | "accepted" | "expired" | "revoked";
+          invited_by?: string | null;
+          accepted_by?: string | null;
+          expires_at: string;
+          accepted_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          email?: string;
+          role?: "therapist" | "admin";
+          token?: string;
+          status?: "pending" | "accepted" | "expired" | "revoked";
+          invited_by?: string | null;
+          accepted_by?: string | null;
+          expires_at?: string;
+          accepted_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      exercise_templates: {
+        Row: {
+          id: string;
+          name: string;
+          description: string | null;
+          body_region: string | null;
+          recovery_phase: string | null;
+          goal: string | null;
+          equipment: string | null;
+          difficulty: string | null;
+          precautions: string | null;
+          image_url: string | null;
+          video_url: string | null;
+          created_by: string | null;
+          is_curated: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          description?: string | null;
+          body_region?: string | null;
+          recovery_phase?: string | null;
+          goal?: string | null;
+          equipment?: string | null;
+          difficulty?: string | null;
+          precautions?: string | null;
+          image_url?: string | null;
+          video_url?: string | null;
+          created_by?: string | null;
+          is_curated?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          description?: string | null;
+          body_region?: string | null;
+          recovery_phase?: string | null;
+          goal?: string | null;
+          equipment?: string | null;
+          difficulty?: string | null;
+          precautions?: string | null;
+          image_url?: string | null;
+          video_url?: string | null;
+          created_by?: string | null;
+          is_curated?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      exercise_plans: {
+        Row: {
+          id: string;
+          patient_id: string;
+          therapist_id: string;
+          title: string;
+          description: string | null;
+          start_date: string | null;
+          end_date: string | null;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          patient_id: string;
+          therapist_id: string;
+          title: string;
+          description?: string | null;
+          start_date?: string | null;
+          end_date?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          patient_id?: string;
+          therapist_id?: string;
+          title?: string;
+          description?: string | null;
+          start_date?: string | null;
+          end_date?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      exercise_plan_items: {
+        Row: {
+          id: string;
+          exercise_plan_id: string;
+          exercise_template_id: string;
+          sequence_order: number;
+          sets: number | null;
+          reps: number | null;
+          hold_seconds: number | null;
+          rest_seconds: number | null;
+          frequency_per_week: number | null;
+          days_of_week: string[] | null;
+          notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          exercise_plan_id: string;
+          exercise_template_id: string;
+          sequence_order?: number;
+          sets?: number | null;
+          reps?: number | null;
+          hold_seconds?: number | null;
+          rest_seconds?: number | null;
+          frequency_per_week?: number | null;
+          days_of_week?: string[] | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          exercise_plan_id?: string;
+          exercise_template_id?: string;
+          sequence_order?: number;
+          sets?: number | null;
+          reps?: number | null;
+          hold_seconds?: number | null;
+          rest_seconds?: number | null;
+          frequency_per_week?: number | null;
+          days_of_week?: string[] | null;
+          notes?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      exercise_sessions: {
+        Row: {
+          id: string;
+          patient_id: string;
+          exercise_plan_id: string | null;
+          exercise_plan_item_id: string | null;
+          exercise_template_id: string | null;
+          started_at: string;
+          completed_at: string | null;
+          total_sets_completed: number | null;
+          total_reps_completed: number | null;
+          average_pain_score: number | null;
+          average_effort: number | null;
+          notes: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          patient_id: string;
+          exercise_plan_id?: string | null;
+          exercise_plan_item_id?: string | null;
+          exercise_template_id?: string | null;
+          started_at?: string;
+          completed_at?: string | null;
+          total_sets_completed?: number | null;
+          total_reps_completed?: number | null;
+          average_pain_score?: number | null;
+          average_effort?: number | null;
+          notes?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          patient_id?: string;
+          exercise_plan_id?: string | null;
+          exercise_plan_item_id?: string | null;
+          exercise_template_id?: string | null;
+          started_at?: string;
+          completed_at?: string | null;
+          total_sets_completed?: number | null;
+          total_reps_completed?: number | null;
+          average_pain_score?: number | null;
+          average_effort?: number | null;
+          notes?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      exercise_recommendations: {
+        Row: {
+          id: string;
+          patient_id: string;
+          therapist_id: string;
+          exercise_plan_id: string | null;
+          exercise_plan_item_id: string | null;
+          recommendation_type: string;
+          status: string;
+          title: string;
+          body: string | null;
+          is_patient_visible: boolean;
+          created_by_system: boolean;
+          created_at: string;
+          resolved_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          patient_id: string;
+          therapist_id: string;
+          exercise_plan_id?: string | null;
+          exercise_plan_item_id?: string | null;
+          recommendation_type?: string;
+          status?: string;
+          title: string;
+          body?: string | null;
+          is_patient_visible?: boolean;
+          created_by_system?: boolean;
+          created_at?: string;
+          resolved_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          patient_id?: string;
+          therapist_id?: string;
+          exercise_plan_id?: string | null;
+          exercise_plan_item_id?: string | null;
+          recommendation_type?: string;
+          status?: string;
+          title?: string;
+          body?: string | null;
+          is_patient_visible?: boolean;
+          created_by_system?: boolean;
+          created_at?: string;
+          resolved_at?: string | null;
+        };
+        Relationships: [];
+      };
+      exercise_form_feedback: {
+        Row: {
+          id: string;
+          exercise_session_id: string;
+          patient_id: string;
+          raw_metrics: Json | null;
+          form_score: number | null;
+          flags: string[] | null;
+          comments: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          exercise_session_id: string;
+          patient_id: string;
+          raw_metrics?: Json | null;
+          form_score?: number | null;
+          flags?: string[] | null;
+          comments?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          exercise_session_id?: string;
+          patient_id?: string;
+          raw_metrics?: Json | null;
+          form_score?: number | null;
+          flags?: string[] | null;
+          comments?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
       };
     };
     Views: Record<string, never>;
@@ -397,6 +739,19 @@ export interface Database {
           record_id: string;
         };
         Returns: string;
+      };
+      create_patient_profile_by_email: {
+        Args: {
+          patient_email: string;
+          patient_full_name?: string | null;
+          patient_phone?: string | null;
+          patient_dob?: string | null;
+          patient_insurance_provider?: string | null;
+          patient_insurance_id?: string | null;
+          patient_emergency_contact_name?: string | null;
+          patient_emergency_contact_phone?: string | null;
+        };
+        Returns: Database["public"]["Tables"]["profiles"]["Row"];
       };
       mark_message_read: {
         Args: {
@@ -465,6 +820,25 @@ export type RecoveryMilestoneInsert =
 /** Recovery milestone update payload. */
 export type RecoveryMilestoneUpdate =
   Database["public"]["Tables"]["recovery_milestones"]["Update"];
+
+/** Exercise template row from `exercise_templates` table. */
+export type ExerciseTemplate = Database["public"]["Tables"]["exercise_templates"]["Row"];
+
+/** Exercise plan row from `exercise_plans` table. */
+export type ExercisePlan = Database["public"]["Tables"]["exercise_plans"]["Row"];
+
+/** Exercise plan item row from `exercise_plan_items` table. */
+export type ExercisePlanItem = Database["public"]["Tables"]["exercise_plan_items"]["Row"];
+
+/** Exercise session row from `exercise_sessions` table. */
+export type ExerciseSession = Database["public"]["Tables"]["exercise_sessions"]["Row"];
+
+/** Exercise recommendation row from `exercise_recommendations` table. */
+export type ExerciseRecommendation =
+  Database["public"]["Tables"]["exercise_recommendations"]["Row"];
+
+/** Therapist invite row from `therapist_invites` table. */
+export type TherapistInvite = Database["public"]["Tables"]["therapist_invites"]["Row"];
 
 /** Review row (reviews table; add to Database if you run migrations for reviews). */
 export interface Review {
