@@ -7,7 +7,7 @@ import {
   ArrowLeft,
   Calendar,
   FileText,
-  TriangleAlert,
+  Plus,
   Mail,
   Phone,
   Edit,
@@ -15,6 +15,7 @@ import {
   Calendar as CalendarIcon,
   Stethoscope,
   MessageSquare,
+  Sparkles,
   Video,
 } from "lucide-react";
 import { Breadcrumb } from "@/components/ui/breadcrumb";
@@ -129,9 +130,6 @@ export default function PatientDetailPage() {
     lastSessionAt: string | null;
     openRecommendations: number;
   } | null>(null);
-  const [quickRecTitle, setQuickRecTitle] = useState("");
-  const [quickRecBody, setQuickRecBody] = useState("");
-  const [savingQuickRec, setSavingQuickRec] = useState(false);
   const [exerciseTemplates, setExerciseTemplates] = useState<ExerciseTemplate[]>([]);
   const [exercisePlans, setExercisePlans] = useState<ExercisePlan[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
@@ -404,76 +402,6 @@ export default function PatientDetailPage() {
       console.error("Error:", error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleQuickAddRecommendation = async () => {
-    if (!quickRecTitle.trim() || savingQuickRec || !patient) return;
-    if (isDemo) {
-      const activePlanId = exercisePlans.find((p) => p.is_active)?.id || selectedPlanId || null;
-      const newRec: ExerciseRecommendation = {
-        id: `demo-quick-rec-${Date.now()}`,
-        exercise_plan_id: activePlanId,
-        title: quickRecTitle.trim(),
-        body: quickRecBody.trim() || null,
-        recommendation_type: "other",
-        status: "open",
-        created_at: new Date().toISOString(),
-      };
-      setDemoPlannerRecommendations((prev) => [newRec, ...prev]);
-      setQuickRecTitle("");
-      setQuickRecBody("");
-      setSavingQuickRec(false);
-      return;
-    }
-    setSavingQuickRec(true);
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) {
-        setSavingQuickRec(false);
-        return;
-      }
-
-      // Find active plan again (lightweight, ensures we attach correctly)
-      const { data: plans } = await supabase
-        .from("exercise_plans")
-        .select("id")
-        .eq("patient_id", patient.id)
-        .eq("therapist_id", user.id)
-        .eq("is_active", true)
-        .order("created_at", { ascending: false })
-        .limit(1);
-
-      const planId = plans && plans.length > 0 ? (plans[0] as any).id : null;
-
-      const { data, error } = await supabase
-        .from("exercise_recommendations")
-        .insert({
-          patient_id: patient.id,
-          therapist_id: user.id,
-          exercise_plan_id: planId,
-          recommendation_type: "other",
-          status: "open",
-          title: quickRecTitle.trim(),
-          body: quickRecBody.trim() || null,
-          is_patient_visible: true,
-          created_by_system: false,
-        })
-        .select("id")
-        .single();
-
-      if (!error && data) {
-        setQuickRecTitle("");
-        setQuickRecBody("");
-        // Refresh summary counts
-        await fetchPatientData();
-      }
-    } catch (err) {
-      console.error("Error adding exercise recommendation:", err);
-    } finally {
-      setSavingQuickRec(false);
     }
   };
 
@@ -1051,6 +979,8 @@ export default function PatientDetailPage() {
   const pastAppointments = appointments.filter(
     (apt) => new Date(apt.start_time) < new Date()
   );
+  const clamshellRecommendationBody =
+    "Surya displayed signs of knee valgus and external knee pain during squats. Based on his exercise history, we recommend adding Clamshells to help strengthen his hip flexors.";
 
   return (
     <div className="p-6 md:p-8">
@@ -1146,172 +1076,57 @@ export default function PatientDetailPage() {
       {activeTab === "overview" && (
         <div className="space-y-6">
           {/* Exercise Insights */}
-          <Card className="overflow-hidden border border-sky-200 dark:border-amber-700/70 bg-gradient-to-r from-sky-50 via-white to-indigo-50 dark:from-amber-950/50 dark:to-orange-950/30 shadow-sm ring-1 ring-white/70 dark:ring-0">
-            <CardHeader className="pb-3">
-              <div className="flex items-start gap-3">
-                <div className="mt-1 rounded-full bg-sky-100 dark:bg-amber-900/60 p-2">
-                  <TriangleAlert className="h-6 w-6 text-sky-700 dark:text-amber-300" />
+          <Card className="overflow-hidden rounded-2xl border border-indigo-200/80 dark:border-indigo-800/70 bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 dark:from-indigo-950/35 dark:via-slate-950 dark:to-slate-900 shadow-md shadow-indigo-100/70 dark:shadow-black/30">
+            <CardHeader className="pb-4">
+              <div className="flex items-start gap-3 sm:gap-4">
+                <div className="relative mt-0.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#8397ff] text-white shadow-lg shadow-indigo-200/80 dark:shadow-indigo-950/60">
+                  <Sparkles className="h-6 w-6" aria-hidden />
+                  <span className="absolute -right-1 -top-1 h-3.5 w-3.5 rounded-full border-2 border-white bg-orange-500 dark:border-slate-950" aria-hidden />
                 </div>
-                <div>
-                  <CardTitle className="text-slate-900 dark:text-amber-100 text-2xl md:text-3xl font-bold tracking-tight">
-                    Exercise Insight
-                  </CardTitle>
-                  <CardDescription className="mt-1 text-sm text-slate-600 dark:text-amber-200/80">
-                    Quick clinical signal and suggested plan update.
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <CardTitle className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+                      Insight from Clara
+                    </CardTitle>
+                    <span className="rounded-full bg-[#8397ff] px-2.5 py-0.5 text-xs font-semibold text-white shadow-sm">
+                      New
+                    </span>
+                  </div>
+                  <CardDescription className="mt-1 text-sm font-medium text-slate-600 dark:text-slate-400">
+                    AI-powered clinical insight and recommendations
                   </CardDescription>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-2.5 pt-0 pb-3">
-              {isDemo ? (
-                <>
-                  {demoExercisePlan ? (
-                    <>
-                      <div className="flex flex-col gap-0.5">
-                        <p className="text-[11px] font-semibold text-muted-foreground uppercase">
-                          Active plan
-                        </p>
-                        <p className="text-sm font-semibold">
-                          {demoExercisePlan.title}
-                        </p>
-                      </div>
-                      {demoExerciseItems.length > 0 ? (
-                        <>
-                          <div className="rounded-lg border-l-4 border-primary border border-sky-200/80 dark:border-amber-700 bg-white/85 dark:bg-slate-900/80 px-4 py-3.5 text-slate-900 dark:text-slate-100 space-y-1.5 shadow-sm">
-                            <p className="text-lg md:text-xl font-semibold text-slate-900 dark:text-amber-200 leading-snug">
-                              Surya showed repeated knee valgus this week during squats.
-                            </p>
-                          </div>
-                          <div className="mt-2 flex flex-wrap items-center gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-8 border-2 border-slate-200 dark:border-slate-600 hover:bg-primary/10 hover:border-primary font-semibold gap-1.5"
-                              onClick={() => {
-                                setQuickRecTitle("Quick add: Clamshells");
-                                setQuickRecBody(
-                                  "Surya struggled with knee valgus during squats this week. Add side-lying clamshells (2–3 sets of 12–15 reps, 3–4x/week) to target hip abductors and improve control."
-                                );
-                              }}
-                            >
-                              Quick add: Clamshells
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-8 border-2 border-slate-200 dark:border-slate-600 hover:bg-primary/10 hover:border-primary font-semibold gap-1.5"
-                              asChild
-                            >
-                              <Link href={`/dashboard/messages?patient=${patient.id}`}>
-                                <MessageSquare className="h-3 w-3" />
-                                <span>Send Surya a message</span>
-                              </Link>
-                            </Button>
-                          </div>
-                        </>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">
-                          This demo patient has a structured exercise plan. Switch out of demo mode
-                          to see live tracking from the patient app.
-                        </p>
-                      )}
-                    </>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      This demo patient doesn&apos;t have an exercise plan yet.
-                    </p>
-                  )}
-                </>
-              ) : exerciseSummary ? (
-                <>
-                  <div className="grid gap-4 md:grid-cols-3">
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground uppercase">
-                        Active plan
-                      </p>
-                      <p className="text-sm font-semibold">{exerciseSummary.planTitle}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground uppercase">
-                        Sessions this week
-                      </p>
-                      <p className="text-sm font-semibold">
-                        {exerciseSummary.sessionsThisWeek}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground uppercase">
-                        Last session
-                      </p>
-                      <p className="text-sm font-semibold">
-                        {exerciseSummary.lastSessionAt
-                          ? new Date(exerciseSummary.lastSessionAt).toLocaleDateString()
-                          : "No sessions yet"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <span>
-                      Open exercise recommendations:{" "}
-                      <span className="font-semibold">
-                        {exerciseSummary.openRecommendations}
-                      </span>
-                    </span>
-                  </div>
-                </>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  No active exercise plan yet. Create a plan in the Exercise tab to start tracking
-                  adherence and form.
+            <CardContent className="space-y-4 pt-0 pb-6 sm:pl-[6rem]">
+              <div className="rounded-2xl border border-slate-200/80 bg-white px-4 py-4 text-slate-900 shadow-sm shadow-slate-200/70 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:shadow-black/20">
+                <p className="text-base font-medium leading-relaxed">
+                  {clamshellRecommendationBody}
                 </p>
-              )}
-
-              {/* Quick add recommendation */}
-              {!isDemo && (
-                <div className="space-y-2 border-t pt-4">
-                  <p className="text-xs font-medium text-muted-foreground uppercase">
-                    Quick exercise recommendation
-                  </p>
-                  {exerciseSummary && (
-                    <button
-                      type="button"
-                      className="text-xs text-primary underline underline-offset-2"
-                      onClick={() => {
-                        const title = "Adjust exercise plan based on tracking";
-                        const body = `Over the last week this patient completed ${exerciseSummary.sessionsThisWeek} session${
-                          exerciseSummary.sessionsThisWeek === 1 ? "" : "s"
-                        } on the active plan "${exerciseSummary.planTitle}". Consider either progressing load (if pain ≤3/10) or maintaining current dosage for another week before progressing.`;
-                        setQuickRecTitle(title);
-                        setQuickRecBody(body);
-                      }}
-                    >
-                      Use suggested recommendation based on tracking
-                    </button>
-                  )}
-                  <input
-                    type="text"
-                    value={quickRecTitle}
-                    onChange={(e) => setQuickRecTitle(e.target.value)}
-                    placeholder="Short headline (e.g. 'Slow down your squats')"
-                    className="w-full rounded-md border px-3 py-2 text-sm bg-background"
-                  />
-                  <textarea
-                    value={quickRecBody}
-                    onChange={(e) => setQuickRecBody(e.target.value)}
-                    placeholder="Optional details you want the patient to see about this change in their plan..."
-                    className="w-full rounded-md border px-3 py-2 text-sm bg-background min-h-[60px]"
-                  />
-                  <div className="flex justify-end">
-                    <Button
-                      size="sm"
-                      onClick={handleQuickAddRecommendation}
-                      disabled={savingQuickRec || !quickRecTitle.trim()}
-                    >
-                      {savingQuickRec ? "Saving..." : "Add Recommendation"}
-                    </Button>
-                  </div>
-                </div>
-              )}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 rounded-xl border-slate-200 bg-white px-4 font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
+                  <Plus className="mr-2 h-4 w-4" aria-hidden />
+                  Quick-Add Clamshells
+                </Button>
+                <Button
+                  type="button"
+                  className="h-10 rounded-xl bg-[#8397ff] px-5 font-semibold text-white shadow-md shadow-indigo-200 hover:bg-[#7489f5] dark:shadow-indigo-950/50"
+                >
+                  Message Surya
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 rounded-xl border-slate-200 bg-white px-5 font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
+                  Modify Exercise Plan
+                </Button>
+              </div>
             </CardContent>
           </Card>
 

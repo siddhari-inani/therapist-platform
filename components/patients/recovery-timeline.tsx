@@ -207,7 +207,7 @@ export function RecoveryTimeline({
                               isCompleted
                                 ? "bg-green-500 border-green-600 text-white shadow-green-200/70"
                                 : isInProgress
-                                ? "bg-primary border-primary text-white shadow-primary/30 animate-pulse"
+                                ? "bg-primary border-primary text-white shadow-primary/30"
                                 : "bg-gray-200 dark:bg-slate-800 border-gray-300 dark:border-slate-600 text-gray-400 dark:text-slate-300"
                             )}
                           >
@@ -220,7 +220,7 @@ export function RecoveryTimeline({
                             )}
                           </div>
                           {isCurrent && (
-                            <div className="absolute -inset-1 rounded-full border-2 border-primary animate-ping opacity-75" />
+                            <div className="absolute -inset-1 rounded-full border-2 border-primary/70" />
                           )}
                         </div>
 
@@ -353,7 +353,7 @@ export function RecoveryTimeline({
                         )}
                       </div>
                       {isCurrent && (
-                        <div className="absolute -inset-1 rounded-full border-2 border-primary animate-ping opacity-75" />
+                        <div className="absolute -inset-1 rounded-full border-2 border-primary/70" />
                       )}
                     </div>
 
