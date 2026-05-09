@@ -1076,7 +1076,7 @@ export default function PatientDetailPage() {
       {activeTab === "overview" && (
         <div className="space-y-6">
           {/* Exercise Insights */}
-          <Card className="overflow-hidden rounded-2xl border border-indigo-200/80 dark:border-indigo-800/70 bg-gradient-to-br from-indigo-50/80 via-white to-slate-50 dark:from-indigo-950/35 dark:via-slate-950 dark:to-slate-900 shadow-md shadow-indigo-100/70 dark:shadow-black/30">
+          <Card className="overflow-hidden rounded-2xl border border-indigo-200/80 bg-[radial-gradient(circle_at_9%_18%,_rgba(232,236,255,0.46)_0%,_rgba(249,250,255,0.34)_30%,_transparent_54%),radial-gradient(circle_at_91%_16%,_rgba(237,232,255,0.42)_0%,_rgba(250,249,255,0.32)_32%,_transparent_56%),linear-gradient(180deg,_rgba(255,255,255,0.99)_0%,_rgba(253,254,255,0.99)_100%)] shadow-md shadow-indigo-100/60 dark:border-indigo-800/70 dark:bg-[radial-gradient(circle_at_9%_18%,_rgba(79,70,229,0.18)_0%,_rgba(30,41,59,0.22)_32%,_transparent_56%),radial-gradient(circle_at_91%_16%,_rgba(124,58,237,0.16)_0%,_rgba(30,41,59,0.2)_34%,_transparent_58%),linear-gradient(180deg,_rgba(15,23,42,0.99)_0%,_rgba(2,6,23,0.99)_100%)] dark:shadow-black/30">
             <CardHeader className="pb-4">
               <div className="flex items-start gap-3 sm:gap-4">
                 <div className="relative mt-0.5 flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#8397ff] text-white shadow-lg shadow-indigo-200/80 dark:shadow-indigo-950/60">
@@ -1107,15 +1107,15 @@ export default function PatientDetailPage() {
               <div className="flex flex-wrap items-center gap-2">
                 <Button
                   type="button"
-                  variant="outline"
-                  className="h-10 rounded-xl border-slate-200 bg-white px-4 font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                  className="h-10 rounded-xl border border-[#aebcff] bg-[#7b95ff] px-4 font-semibold text-white shadow-[0_0_0_3px_rgba(123,149,255,0.16),0_10px_22px_rgba(123,149,255,0.28)] hover:bg-[#718aff] dark:border-[#9badff] dark:shadow-[0_0_0_3px_rgba(123,149,255,0.2),0_10px_24px_rgba(123,149,255,0.18)] dark:hover:bg-[#718aff]"
                 >
                   <Plus className="mr-2 h-4 w-4" aria-hidden />
                   Quick-Add Clamshells
                 </Button>
                 <Button
                   type="button"
-                  className="h-10 rounded-xl bg-[#8397ff] px-5 font-semibold text-white shadow-md shadow-indigo-200 hover:bg-[#7489f5] dark:shadow-indigo-950/50"
+                  variant="outline"
+                  className="h-10 rounded-xl border-slate-200 bg-white px-5 font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                 >
                   Message Surya
                 </Button>
