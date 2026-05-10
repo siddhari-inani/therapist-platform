@@ -1,0 +1,34 @@
+name: Daily Vercel Production Deploy
+
+# Triggers a fresh production build on Vercel once a day so cached pages,
+# ISR data, and any 3rd-party content stay current even on days with no
+# new commits. Also runnable on demand from the GitHub Actions UI.
+on:
+  schedule:
+    # 09:00 UTC every day = 05:00 ET (DST) / 04:00 ET (standard).
+    - cron: "0 9 * * *"
+  workflow_dispatch:
+
+jobs:
+  trigger-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Vercel deploy hook
+        env:
+          VERCEL_DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$VERCEL_DEPLOY_HOOK_URL" ]; then
+            echo "::error::VERCEL_DEPLOY_HOOK_URL secret is not set."
+            echo "Create one in the Vercel dashboard (Project Settings → Git → Deploy Hooks)"
+            echo "then add it as a repo secret named VERCEL_DEPLOY_HOOK_URL."
+            exit 1
+          fi
+          response=$(curl -sS -X POST -w "\n%{http_code}" "$VERCEL_DEPLOY_HOOK_URL")
+          body=$(echo "$response" | head -n -1)
+          status=$(echo "$response" | tail -n 1)
+          echo "HTTP $status"
+          echo "$body"
+          if [ "$status" != "200" ] && [ "$status" != "201" ]; then
+            echo "::error::Deploy hook returned non-success status."
+            exit 1
+          fi
