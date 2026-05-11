@@ -3,10 +3,13 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { toast } from "sonner";
 import {
   ArrowLeft,
   Calendar,
+  Check,
   FileText,
+  Loader2,
   Plus,
   Mail,
   Phone,
@@ -43,6 +46,10 @@ import type {
 } from "@/types/database.types";
 import { RecoveryTimeline } from "@/components/patients/recovery-timeline";
 import { ExerciseLibrary, type ExerciseLibraryTemplate } from "@/components/exercise/exercise-library";
+import {
+  CLAMSHELL_PLAN_ITEM,
+  CLAMSHELL_TEMPLATE,
+} from "@/lib/exercise/clamshell-quick-add";
 
 type ExerciseTemplate = ExerciseLibraryTemplate & {
   id: string;
@@ -157,6 +164,8 @@ export default function PatientDetailPage() {
   const [newTrackerRecTitle, setNewTrackerRecTitle] = useState("");
   const [newTrackerRecBody, setNewTrackerRecBody] = useState("");
   const [loading, setLoading] = useState(true);
+  const [quickAddConfirmationOpen, setQuickAddConfirmationOpen] = useState(false);
+  const [quickAddIsSaving, setQuickAddIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<
     "overview" | "appointments" | "records" | "exercise"
   >("overview");
@@ -174,6 +183,16 @@ export default function PatientDetailPage() {
       fetchExercisePlannerData();
     }
   }, [activeTab, patientId, isDemo]);
+
+  useEffect(() => {
+    if (!quickAddConfirmationOpen) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setQuickAddConfirmationOpen(false);
+    }, 5000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [quickAddConfirmationOpen]);
 
   const fetchPatientData = async () => {
     try {
@@ -718,6 +737,160 @@ export default function PatientDetailPage() {
     }
   };
 
+  const handleQuickAddClamshells = async () => {
+    setQuickAddIsSaving(true);
+
+    try {
+      if (isDemo) {
+        const nowIso = new Date().toISOString();
+        let planId =
+          selectedPlanId ||
+          exercisePlans.find((plan) => plan.is_active)?.id ||
+          exercisePlans[0]?.id ||
+          null;
+
+        if (!planId) {
+          const newPlan: ExercisePlan = {
+            id: `demo-plan-clamshell-${Date.now()}`,
+            title: "Hip Strength Plan",
+            description: "Quick-start plan for hip control and knee alignment.",
+            start_date: nowIso.slice(0, 10),
+            end_date: null,
+            is_active: true,
+            created_at: nowIso,
+          };
+          planId = newPlan.id;
+          setExercisePlans((prev) => [
+            newPlan,
+            ...prev.map((plan) => ({ ...plan, is_active: false })),
+          ]);
+          setDemoExercisePlan((prev: any) => prev || { ...newPlan, patient_id: patientId });
+        }
+
+        const existingTemplate = exerciseTemplates.find(
+          (template) => template.name.toLowerCase() === CLAMSHELL_TEMPLATE.name.toLowerCase()
+        );
+        const templateId = existingTemplate?.id || "demo-template-clamshell";
+        const templateName = existingTemplate?.name || CLAMSHELL_TEMPLATE.name;
+
+        if (!existingTemplate) {
+          const newTemplate: ExerciseTemplate = {
+            id: templateId,
+            name: CLAMSHELL_TEMPLATE.name,
+            description: CLAMSHELL_TEMPLATE.description,
+            created_by: DEMO_THERAPIST_ID,
+            video_url: null,
+            image_url: null,
+            body_region: CLAMSHELL_TEMPLATE.body_region,
+            recovery_phase: CLAMSHELL_TEMPLATE.recovery_phase,
+            goal: CLAMSHELL_TEMPLATE.goal,
+            equipment: CLAMSHELL_TEMPLATE.equipment,
+            difficulty: CLAMSHELL_TEMPLATE.difficulty,
+          };
+          setExerciseTemplates((prev) =>
+            [...prev, newTemplate].sort((a, b) => a.name.localeCompare(b.name))
+          );
+        }
+
+        const selectedItems = demoPlannerItems.filter(
+          (item) => item.exercise_plan_id === planId
+        );
+        const clamshellAlreadyAdded = selectedItems.some(
+          (item) =>
+            item.exercise_template_id === templateId ||
+            item.exercise_templates?.name.toLowerCase() === CLAMSHELL_TEMPLATE.name.toLowerCase()
+        );
+
+        if (!clamshellAlreadyAdded) {
+          const nextOrder =
+            Math.max(0, ...selectedItems.map((item) => item.sequence_order || 0)) + 1;
+          const newItem: ExercisePlanItem = {
+            id: `demo-item-clamshell-${Date.now()}`,
+            exercise_plan_id: planId,
+            sequence_order: nextOrder,
+            exercise_template_id: templateId,
+            exercise_templates: { name: templateName },
+            ...CLAMSHELL_PLAN_ITEM,
+          };
+          setDemoPlannerItems((prev) => [...prev, newItem]);
+
+          if (demoExercisePlan?.id === planId) {
+            setDemoExerciseItems((prev) => [
+              ...prev,
+              {
+                ...newItem,
+                template: {
+                  id: templateId,
+                  name: templateName,
+                  image_url: null,
+                },
+                sessions: [],
+              },
+            ]);
+          }
+        }
+
+        setSelectedPlanId(planId);
+        setQuickAddConfirmationOpen(true);
+        return;
+      }
+
+      const response = await fetch("/api/exercise/quick-add-clamshells", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ patientId }),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "Clamshells could not be added.");
+      }
+
+      const targetPlan = data.plan as ExercisePlan;
+      const clamshellTemplate = data.template as ExerciseTemplate;
+      const clamshellItem = data.item as ExercisePlanItem;
+
+      setSelectedPlanId(targetPlan.id);
+      setExercisePlans((prev) => {
+        const withoutDuplicate = prev.filter((plan) => plan.id !== targetPlan.id);
+        return [targetPlan, ...withoutDuplicate].sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+      });
+      setExerciseTemplates((prev) => {
+        const withoutDuplicate = prev.filter((template) => template.id !== clamshellTemplate.id);
+        return [...withoutDuplicate, clamshellTemplate].sort((a, b) =>
+          a.name.localeCompare(b.name)
+        );
+      });
+      await fetchPlanItems(targetPlan.id);
+      setExercisePlanItems((prev) => {
+        if (prev.some((item) => item.id === clamshellItem.id)) return prev;
+        return [...prev, clamshellItem].sort((a, b) => a.sequence_order - b.sequence_order);
+      });
+      setExerciseSummary((prev) =>
+        prev
+          ? { ...prev, planTitle: targetPlan.title }
+          : {
+              planTitle: targetPlan.title,
+              sessionsThisWeek: 0,
+              lastSessionAt: null,
+              openRecommendations: 0,
+            }
+      );
+      setQuickAddConfirmationOpen(true);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Please try again or add the exercise manually.";
+      console.warn("Quick-add clamshells failed:", message);
+      toast.error("Clamshells were not added", {
+        description: message,
+      });
+    } finally {
+      setQuickAddIsSaving(false);
+    }
+  };
+
   const handleDeletePlanItem = async (itemId: string) => {
     if (!selectedPlanId) return;
     if (isDemo) {
@@ -1107,10 +1280,16 @@ export default function PatientDetailPage() {
               <div className="flex flex-wrap items-center gap-2">
                 <Button
                   type="button"
+                  onClick={handleQuickAddClamshells}
+                  disabled={quickAddIsSaving}
                   className="h-10 rounded-xl border border-[#aebcff] bg-[#7b95ff] px-4 font-semibold text-white shadow-[0_0_0_3px_rgba(123,149,255,0.16),0_10px_22px_rgba(123,149,255,0.28)] hover:bg-[#718aff] dark:border-[#9badff] dark:shadow-[0_0_0_3px_rgba(123,149,255,0.2),0_10px_24px_rgba(123,149,255,0.18)] dark:hover:bg-[#718aff]"
                 >
-                  <Plus className="mr-2 h-4 w-4" aria-hidden />
-                  Quick-Add Clamshells
+                  {quickAddIsSaving ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                  ) : (
+                    <Plus className="mr-2 h-4 w-4" aria-hidden />
+                  )}
+                  {quickAddIsSaving ? "Adding..." : "Quick-Add Clamshells"}
                 </Button>
                 <Button
                   type="button"
@@ -2191,6 +2370,34 @@ export default function PatientDetailPage() {
                 </div>
             </CardContent>
           </Card>
+        </div>
+      )}
+      {quickAddConfirmationOpen && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed right-4 top-4 z-50 w-fit max-w-[calc(100vw-2rem)] rounded-2xl border border-slate-200/80 bg-white px-3.5 py-3 pr-10 shadow-xl shadow-slate-900/10 animate-in fade-in-0 slide-in-from-top-3 duration-300 dark:border-slate-800 dark:bg-slate-950"
+        >
+          <button
+            type="button"
+            aria-label="Dismiss confirmation"
+            className="absolute right-2.5 top-2.5 rounded-full p-1 text-sm leading-none text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+            onClick={() => setQuickAddConfirmationOpen(false)}
+          >
+            <span aria-hidden>×</span>
+          </button>
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-md shadow-emerald-500/25 animate-in zoom-in-50 duration-300 motion-reduce:animate-none">
+              <Check
+                className="h-5 w-5 animate-in zoom-in-75 delay-150 duration-300 motion-reduce:animate-none"
+                strokeWidth={3.25}
+                aria-hidden
+              />
+            </div>
+            <div className="pr-1 text-sm font-semibold leading-snug tracking-tight text-slate-950 sm:whitespace-nowrap dark:text-slate-50">
+              Clamshells added to Exercise Plan
+            </div>
+          </div>
         </div>
       )}
     </div>

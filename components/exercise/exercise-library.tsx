@@ -160,8 +160,8 @@ export function ExerciseLibrary({
               <div className="mt-3 flex flex-wrap gap-1.5">
                 {[template.body_region, template.recovery_phase, template.goal, template.equipment, template.difficulty]
                   .filter(Boolean)
-                  .map((value) => (
-                    <span key={value} className="rounded-full bg-slate-100 px-2 py-1 text-[11px] text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                  .map((value, index) => (
+                    <span key={`${value}-${index}`} className="rounded-full bg-slate-100 px-2 py-1 text-[11px] text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                       {value}
                     </span>
                   ))}
