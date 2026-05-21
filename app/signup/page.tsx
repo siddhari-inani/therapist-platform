@@ -60,7 +60,7 @@ export default function SignupPage() {
 
       const emailRedirectTo =
         typeof window !== "undefined"
-          ? `${window.location.origin}/auth/callback?next=/dashboard/profile`
+          ? `${window.location.origin}/auth/callback?next=/onboarding`
           : undefined;
 
       const { data, error: signUpError } = await supabase.auth.signUp({

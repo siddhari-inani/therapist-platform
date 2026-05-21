@@ -1,21 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useDemoMode } from "@/contexts/demo-context";
 import { Card, CardContent } from "@/components/ui/card";
 
-const ONBOARDING_ALLOWED_ROUTES = new Set([
-  "/dashboard/profile",
-  "/dashboard/settings",
-  "/dashboard/preferences",
-]);
-
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const [checking, setChecking] = useState(true);
   const router = useRouter();
-  const pathname = usePathname();
   const supabase = createClient();
   const { isDemo } = useDemoMode();
 
@@ -42,22 +35,24 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role, full_name, license_number")
+        .select("role, full_name, license_number, onboarding_completed_at")
         .eq("id", user.id)
         .maybeSingle();
 
       if (!mounted) return;
 
+      // Therapists must finish the onboarding wizard before they can use the
+      // dashboard. We treat the user as onboarded when either:
+      //   * onboarding_completed_at is set (preferred, set by the wizard), OR
+      //   * full_name + license_number are both filled (legacy invite-flow
+      //     accounts that predate onboarding_completed_at).
+      const isTherapist = profile?.role === "therapist";
+      const hasRequiredFields = Boolean(profile?.full_name && profile?.license_number);
       const needsOnboarding =
-        profile?.role === "therapist" &&
-        (!profile.full_name || !profile.license_number);
+        isTherapist && !profile?.onboarding_completed_at && !hasRequiredFields;
 
-      if (
-        needsOnboarding &&
-        pathname !== "/dashboard/profile" &&
-        !ONBOARDING_ALLOWED_ROUTES.has(pathname)
-      ) {
-        router.replace("/dashboard/profile");
+      if (needsOnboarding) {
+        router.replace("/onboarding");
         return;
       }
 
@@ -68,7 +63,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     return () => {
       mounted = false;
     };
-  }, [isDemo, pathname, router, supabase]);
+  }, [isDemo, router, supabase]);
 
   if (checking) {
     return (

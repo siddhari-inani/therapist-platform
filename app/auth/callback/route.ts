@@ -13,7 +13,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const errorParam = url.searchParams.get("error_description") ?? url.searchParams.get("error");
-  const next = url.searchParams.get("next") ?? "/dashboard";
+  const next = url.searchParams.get("next") ?? "/onboarding";
 
   if (errorParam) {
     const failure = new URL("/login", url.origin);
