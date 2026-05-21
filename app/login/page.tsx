@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FlaskConical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +16,17 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+
+  // Surface errors forwarded by /auth/callback (e.g. expired confirmation link).
+  useEffect(() => {
+    const callbackError = searchParams.get("error");
+    if (callbackError) {
+      setError(callbackError);
+      toast.error(callbackError);
+    }
+  }, [searchParams]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -187,9 +198,18 @@ export default function LoginPage() {
               </Button>
             </form>
             
-            <div className="pt-4 border-t border-white/40 dark:border-white/10 text-center">
+            <div className="pt-4 border-t border-white/40 dark:border-white/10 text-center space-y-2">
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                New to Revora?{" "}
+                <Link
+                  href="/signup"
+                  className="font-semibold text-primary hover:underline"
+                >
+                  Create an account
+                </Link>
+              </p>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Therapist accounts are created by invitation from a clinic administrator.
+                Physical therapists can sign up with their work email.
               </p>
             </div>
           </CardContent>
