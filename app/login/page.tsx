@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FlaskConical } from "lucide-react";
@@ -10,23 +10,27 @@ import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 
-export default function LoginPage() {
+// useSearchParams must live inside a Suspense boundary to allow Next.js to
+// statically prerender /login. Extract it into a tiny child that hydrates
+// inside <Suspense>, then surface the value via callback to the parent.
+function CallbackErrorWatcher({ onError }: { onError: (message: string) => void }) {
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const callbackError = searchParams.get("error");
+    if (callbackError) {
+      onError(callbackError);
+    }
+  }, [searchParams, onError]);
+  return null;
+}
+
+function LoginPageContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const searchParams = useSearchParams();
   const supabase = createClient();
-
-  // Surface errors forwarded by /auth/callback (e.g. expired confirmation link).
-  useEffect(() => {
-    const callbackError = searchParams.get("error");
-    if (callbackError) {
-      setError(callbackError);
-      toast.error(callbackError);
-    }
-  }, [searchParams]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,13 +113,20 @@ export default function LoginPage() {
     }
   };
 
+  const handleCallbackError = (message: string) => {
+    setError(message);
+    toast.error(message);
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-lime-50/40 to-white dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-4 relative overflow-hidden">
-      {/* Background decoration */}
+      <Suspense fallback={null}>
+        <CallbackErrorWatcher onError={handleCallbackError} />
+      </Suspense>
       <div className="absolute inset-0 bg-grid-slate-900/[0.04] dark:bg-grid-slate-100/[0.05] bg-[size:20px_20px]" />
       <div className="absolute top-0 right-0 w-96 h-96 bg-primary/15 dark:bg-primary/10 rounded-full blur-3xl" />
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-lime-400/20 dark:bg-lime-500/10 rounded-full blur-3xl" />
-      
+
       <div className="relative w-full max-w-md animate-scale-in">
         <Card className="border border-white/40 dark:border-white/10 shadow-2xl shadow-slate-200/50 dark:shadow-black/30 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl">
           <CardHeader className="space-y-3 pb-6">
@@ -216,5 +227,13 @@ export default function LoginPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginPageContent />
+    </Suspense>
   );
 }
